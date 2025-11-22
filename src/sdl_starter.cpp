@@ -1,4 +1,5 @@
 #include "sdl_starter.h"
+#include <cmath>
 
 int startSDLSystems(SDL_Window *window, SDL_Renderer *renderer)
 {
@@ -45,19 +46,17 @@ int startSDLSystems(SDL_Window *window, SDL_Renderer *renderer)
     return 0;
 }
 
-Sprite loadSprite(SDL_Renderer *renderer, const char *filePath, int positionX, int positionY)
-{
+Sprite loadSprite(SDL_Renderer* renderer, const char* filePath, int positionX, int positionY, float vx, float vy) {
     SDL_Rect bounds = {positionX, positionY, 0, 0};
 
-    SDL_Texture *texture = IMG_LoadTexture(renderer, filePath);
+    SDL_Texture* texture = IMG_LoadTexture(renderer, filePath);
 
     if (texture != nullptr)
     {
-        SDL_QueryTexture(texture, NULL, NULL, &bounds.w, &bounds.h);
+        SDL_QueryTexture(texture, nullptr, nullptr, &bounds.w, &bounds.h);
     }
 
-    Sprite sprite = {texture, bounds};
-
+    Sprite sprite = {texture, bounds, vx, vy, positionX, positionY, NAN, false, false, false}; // vx, vy default to 0 if not passed
     return sprite;
 }
 
@@ -83,10 +82,14 @@ Mix_Music *loadMusic(const char *filePath)
     return music;
 }
 
-void updateTextureText(SDL_Texture *&texture, const char *text, TTF_Font *&fontSquare, SDL_Renderer *renderer)
+void updateTextureText(
+    SDL_Texture *&texture,
+    const char *text,
+    TTF_Font *&fontSquare,
+    SDL_Renderer *renderer,
+    SDL_Color fontColor
+)
 {
-    SDL_Color fontColor = {255, 255, 255};
-
     if (fontSquare == nullptr)
     {
         printf("TTF_OpenFont fontSquare: %s\n", TTF_GetError());
