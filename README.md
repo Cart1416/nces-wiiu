@@ -1,6 +1,9 @@
 # Nic Cage Eats Stuff Wii U Port
 
 My first C++ program
+A port of my Nic Cage Eats Stuff game to the Wii U. The game is simple, collect chicken and dodge the celery, try to get the highest score. Tip: hold a for invincibility
+
+Original games are available on ahf2139.pythonanywhere.com.
 
 Based on a Nintendo WiiU SDL2 starter template.
 
