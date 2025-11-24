@@ -23,6 +23,8 @@ I built everything using Debian 13 after some trial and error
 
 *  and then
   `dkp-pacman -Syu wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_mixer wiiu-sdl2_ttf`
+* extract this to /opt/devkitpro/portlibs/wiiu/
+  `https://github.com/yawut/libromfs-wiiu/releases/download/0.7/libromfs-wiiu-0.7.tar.bz2`
 
 * Clone this repo
 * `cd nces-wiiu`
