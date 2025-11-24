@@ -29,8 +29,8 @@ const std::string enemyToCollectText[] = {
 
 const int maxEnemyEaten[] = {
     3,
-    10,
-    999
+    999,
+    10
 };
 
 const std::string gameOverText[] = {
@@ -175,6 +175,7 @@ void handleEvents() {
         if (event.type == SDL_JOYBUTTONDOWN) { // Controller button pressed
             if (event.jbutton.button == BUTTON_MINUS) { // Minus button quits back to game select
                 currentScreen = "menu";
+                isGamePaused = false;
             }
 
             if (event.jbutton.button == BUTTON_PLUS) { // Plus button toggles pause
@@ -359,7 +360,7 @@ void update(float deltaTime) {
         }
     }
     if (currentScreen == "game") {
-        if (!playerSprite.immobile && enemyEaten < 3) {
+        if (!playerSprite.immobile && enemyEaten < maxEnemyEaten[currentGameMode]) {
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
                 playerSprite.bounds.y -= PLAYER_SPEED * deltaTime;
                 if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
@@ -525,7 +526,7 @@ void render() {
 
         // Draw tokens eaten
         SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
-        tokenseatenBounds.x = SCREEN_WIDTH / 2;
+        tokenseatenBounds.x = SCREEN_WIDTH / 2 - tokenseatenBounds.w / 2;
         tokenseatenBounds.y = SCREEN_HEIGHT / 2 + 50;
         SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
 
@@ -535,13 +536,13 @@ void render() {
 
         // Draw enemy eaten
         SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
-        enemyEatenBounds.x = SCREEN_WIDTH / 2;
+        enemyEatenBounds.x = SCREEN_WIDTH / 2 - enemyEatenBounds.w / 2;
         enemyEatenBounds.y = SCREEN_HEIGHT / 2 - 50;
         SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
     }
     if (currentScreen == "game") {
         // Draw player
-        if (enemyEaten < 3) {
+        if (enemyEaten < maxEnemyEaten[currentGameMode]) {
             renderSprite(playerSprite);
 
             for (auto& enemy : enemies) {
@@ -560,7 +561,7 @@ void render() {
 
         // Update celery eaten text
         std::string enemyEatenString = "";
-        if (enemyEaten < 3) {
+        if (enemyEaten < maxEnemyEaten[currentGameMode]) {
             enemyEatenString = enemyToCollectText[currentGameMode] + std::to_string(enemyEaten) + "/" + std::to_string(maxEnemyEaten[currentGameMode]);
         } else {
             enemyEatenString = gameOverText[currentGameMode];
@@ -580,7 +581,7 @@ void render() {
         // Draw tokens eaten
         SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
         tokenseatenBounds.x = 32;
-        tokenseatenBounds.y = 42;
+        tokenseatenBounds.y = 40;
         SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
 
         // Update misc1 text
@@ -589,13 +590,15 @@ void render() {
         if (enemyLen >= 200) {
             miscString1 = "Enemy limit of 200 reached!";
         }
-        updateTextureText(miscTexture1, miscString1.c_str(), font, renderer, colors[8]);
+        if (miscString1 != "") {
+            updateTextureText(miscTexture1, miscString1.c_str(), font, renderer, colors[8]);
 
-        // Draw misc1
-        SDL_QueryTexture(miscTexture1, NULL, NULL, &miscBounds1.w, &miscBounds1.h);
-        miscBounds1.x = 32;
-        miscBounds1.y = 62;
-        SDL_RenderCopy(renderer, miscTexture1, NULL, &miscBounds1);
+            // Draw misc1
+            SDL_QueryTexture(miscTexture1, NULL, NULL, &miscBounds1.w, &miscBounds1.h);
+            miscBounds1.x = 32;
+            miscBounds1.y = 80;
+            SDL_RenderCopy(renderer, miscTexture1, NULL, &miscBounds1);
+        }
     }
     // Present everything on screen
     SDL_RenderPresent(renderer);
