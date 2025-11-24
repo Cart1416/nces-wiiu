@@ -595,11 +595,9 @@ void render() {
         miscBounds1.x = 32;
         miscBounds1.y = 62;
         SDL_RenderCopy(renderer, miscTexture1, NULL, &miscBounds1);
-
-
-        // Present everything on screen
-        SDL_RenderPresent(renderer);
     }
+    // Present everything on screen
+    SDL_RenderPresent(renderer);
 }
 
 // ------------------ MAIN FUNCTION ------------------
