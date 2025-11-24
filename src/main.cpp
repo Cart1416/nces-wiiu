@@ -7,6 +7,82 @@
 #include <stdlib.h> // rand, srand
 #include <vector>
 #include <cmath>
+#include <algorithm>
+
+const std::string gameModeNames[] = {
+    "Nic Cage Eats Stuff",
+    "EASY Nic Cage Eats Stuff",
+    "IMPOSSIBLE Nic Cage Eats Stuff"
+};
+
+const std::string thingToCollectText[] = {
+    "Chicken eaten: ",
+    "Chicken eaten: ",
+    "Chicken eaten: "
+};
+
+const std::string enemyToCollectText[] = {
+    "Celery eaten: ",
+    "Celery eaten: ",
+    "Celery eaten: "
+};
+
+const int maxEnemyEaten[] = {
+    3,
+    10,
+    999
+};
+
+const std::string gameOverText[] = {
+    "You died! Press A to restart or - to change game.",
+    "How did you die? Press A to restart or - to change game.",
+    "You are trash lol. Press A to restart or - to change game."
+};
+
+const std::string playerImage[] = {
+    "sprites/NicCageFace.png",
+    "sprites/NicCageFace.png",
+    "sprites/NicCageFace.png"
+};
+
+const std::string playerInvincibleImage[] = {
+    "sprites/NicCageFaceTransparent.png",
+    "sprites/NicCageFaceTransparent.png",
+    "sprites/NicCageFaceTransparent.png"
+};
+
+const std::string tokenImage[] = {
+    "sprites/chicken.png",
+    "sprites/chicken.png",
+    "sprites/chicken.png"
+};
+
+const std::string enemyImage[] = {
+    "sprites/celery.png",
+    "sprites/celery.png",
+    "sprites/celery.png"
+};
+
+const int tokenCount[] = {
+    1,
+    5,
+    1
+};
+
+const std::vector<std::vector<std::string>> gameModeModifiers = {
+    {},
+    {"noEnemy"},
+    {"spawnEnemyOnMove"}
+};
+
+const int playerSpeed[] = {
+    250,
+    500,
+    250
+};
+
+
+
 
 int rng(int min, int max) {
     return min + rand() % (max - min + 1);
@@ -18,7 +94,7 @@ SDL_Renderer *renderer = nullptr;       // The rendering context for the window
 SDL_GameController *controller = nullptr; // The game controller (Wii U Pro Controller)
 
 // Game constants
-const int PLAYER_SPEED = 250;           // Player movement speed in pixels/sec
+int PLAYER_SPEED = 250;           // Player movement speed in pixels/sec
 
 // Player sprite
 Sprite playerSprite;                    // Custom struct representing the player
@@ -31,6 +107,9 @@ Mix_Chunk *sound = nullptr;             // Short sound effects
 // Game state
 bool isGamePaused = false;              // Flag for pause state
 bool isGameRunning = true;              // Main loop control flag
+std::string currentScreen = "menu";
+int currentGameMode = 0; // 0 is classic, 1 is easy, 2 is impossible
+
 
 // Pause screen
 SDL_Texture *pauseTexture = nullptr;    // Texture for pause message
@@ -90,9 +169,8 @@ void handleEvents() {
         }
 
         if (event.type == SDL_JOYBUTTONDOWN) { // Controller button pressed
-            if (event.jbutton.button == BUTTON_MINUS) { // Minus button quits
-                //isGameRunning = false;
-                //break;
+            if (event.jbutton.button == BUTTON_MINUS) { // Minus button quits back to game select
+                currentScreen = "menu";
             }
 
             if (event.jbutton.button == BUTTON_PLUS) { // Plus button toggles pause
@@ -236,143 +314,171 @@ void restartGame() {
 }
 
 bool previousInvulnerable = false;
+bool previousLeft = false;
+bool previousRight = false;
 
 // ------------------ GAME LOGIC ------------------
 void update(float deltaTime) {
     // Move player based on controller input
-    if (!playerSprite.immobile && enemyEaten < 3) {
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
-            playerSprite.bounds.y -= PLAYER_SPEED * deltaTime;
-            if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
-                playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
-            }
-        }
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
-            playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
-            if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
-                playerSprite.bounds.y = 0;
-            }
+    if (currentScreen == "menu") {
+        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
+            currentScreen = 1;            
+            isGamePaused = false;
+            restartGame();
         }
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
-            playerSprite.bounds.x -= PLAYER_SPEED * deltaTime;
-            if (playerSprite.bounds.x < -80) {
-                playerSprite.bounds.x = SCREEN_WIDTH;
+            if (currentGameMode > 0 && !previousLeft) {
+                currentGameMode--;
             }
+            previousLeft = true;
+        } else {
+            previousLeft = false;
         }
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
-            playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
-            if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
-                playerSprite.bounds.x = 0;
+            int gameModeLength = sizeof(gameModeNames);
+            if (currentGameMode < (gameModeLength - 1) && !previousRight) {
+                currentGameMode++;
+            }
+            previousRight = true;
+        } else {
+            previousRight = false;
+        }
+    }
+    if (currentScreen == "game") {
+        if (!playerSprite.immobile && enemyEaten < 3) {
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
+                playerSprite.bounds.y -= PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
+                    playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+                }
+            }
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
+                playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
+                    playerSprite.bounds.y = 0;
+                }
+            }
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+                playerSprite.bounds.x -= PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.x < -80) {
+                    playerSprite.bounds.x = SCREEN_WIDTH;
+                }
+            }
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+                playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
+                    playerSprite.bounds.x = 0;
+                }
             }
         }
-    }
-    mouth.x = playerSprite.bounds.x + 27;
-    mouth.y = playerSprite.bounds.y + 88;
-    mouth.w = 40;
-    mouth.h = 20;
-    if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
-        if (previousInvulnerable == false) {
-            playerSprite.texture = IMG_LoadTexture(renderer, "sprites/NicCageFaceTransparent.png");
+        mouth.x = playerSprite.bounds.x + 27;
+        mouth.y = playerSprite.bounds.y + 88;
+        mouth.w = 40;
+        mouth.h = 20;
+        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
+            if (previousInvulnerable == false) {
+                playerSprite.texture = IMG_LoadTexture(renderer, "sprites/NicCageFaceTransparent.png");
+            }
+            playerSprite.invulnerable = true;
+            playerSprite.immobile = true;
+            previousInvulnerable = true;
+        } else {
+            if (previousInvulnerable == true) {
+                playerSprite.texture = IMG_LoadTexture(renderer, "sprites/NicCageFace.png");
+            }
+            playerSprite.invulnerable = false;
+            playerSprite.immobile = false;
+            previousInvulnerable = false;
         }
-        playerSprite.invulnerable = true;
-        playerSprite.immobile = true;
-        previousInvulnerable = true;
-    } else {
-        if (previousInvulnerable == true) {
-            playerSprite.texture = IMG_LoadTexture(renderer, "sprites/NicCageFace.png");
+        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= 3) {
+            restartGame();
         }
-        playerSprite.invulnerable = false;
-        playerSprite.immobile = false;
-        previousInvulnerable = false;
-    }
-    if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= 3) {
-        restartGame();
-    }
 
-    // enemy collision with player
-    for (auto& enemy : enemies) {
-        if (SDL_HasIntersection(&mouth, &enemy.bounds) && !playerSprite.invulnerable) {
-            enemyEaten++;                        // Increment enemy eaten
-            enemy.fx = rng(0, SCREEN_WIDTH);
-            enemy.fy = rng(0, SCREEN_HEIGHT);
-        }
-    }
-
-    // token collision with player
-    for (auto& token : tokens) {
-        if (SDL_HasIntersection(&mouth, &token.bounds)) {
-            Mix_PlayChannel(-1, sound, 0); // Play collision sound
-            tokenseaten++;                        // Increment tokenseaten
-            token.fx = rng(0, SCREEN_WIDTH);
-            token.fy = rng(0, SCREEN_HEIGHT);
-            if (tokenseaten % 3 == 0) {
-                addEnemy();
+        // enemy collision with player
+        for (auto& enemy : enemies) {
+            if (SDL_HasIntersection(&mouth, &enemy.bounds) && !playerSprite.invulnerable) {
+                enemyEaten++;                        // Increment enemy eaten
+                enemy.fx = rng(0, SCREEN_WIDTH);
+                enemy.fy = rng(0, SCREEN_HEIGHT);
             }
         }
-    }
 
-    // update the enemies
-    int i = 0;
-    for (auto& enemy : enemies) {
-        int enemyLen = static_cast<int>(enemies.size());
-        int tokenLen = static_cast<int>(tokens.size());
-        if (enemyLen % 4 == 0) {
-            enemy.protectingToken = true;
-        } else {
-            enemy.protectingToken = false;
+        // token collision with player
+        for (auto& token : tokens) {
+            if (SDL_HasIntersection(&mouth, &token.bounds)) {
+                Mix_PlayChannel(-1, sound, 0); // Play collision sound
+                tokenseaten++;                        // Increment tokenseaten
+                token.fx = rng(0, SCREEN_WIDTH);
+                token.fy = rng(0, SCREEN_HEIGHT);
+                if (tokenseaten % 3 == 0) {
+                    addEnemy();
+                }
+            }
         }
-        if (!enemy.protectingToken) {
-            enemy.fx += enemy.hv * deltaTime;
-            enemy.fy += enemy.vv * deltaTime;
-        } else {
-            int tokenIToCircle = static_cast<int>(std::floor(static_cast<float>(i) / (static_cast<float>(enemyLen) / static_cast<float>(tokenLen))));
-            int distanceToToken = distance(enemy, tokens[tokenIToCircle]);
-            if (distanceToToken >= 200) {
-                // Attract the enemy towards the token
-                attract(enemy, tokens[tokenIToCircle]);
-                // Update float positions
+
+        // update the enemies
+        int i = 0;
+        for (auto& enemy : enemies) {
+            int enemyLen = static_cast<int>(enemies.size());
+            int tokenLen = static_cast<int>(tokens.size());
+            if (enemyLen % 4 == 0) {
+                enemy.protectingToken = true;
+            } else {
+                enemy.protectingToken = false;
+            }
+            if (!enemy.protectingToken) {
                 enemy.fx += enemy.hv * deltaTime;
                 enemy.fy += enemy.vv * deltaTime;
             } else {
-                // Circle around the token
-                circleAroundObject(tokens[tokenIToCircle], enemy, 190);
+                int tokenIToCircle = static_cast<int>(std::floor(static_cast<float>(i) / (static_cast<float>(enemyLen) / static_cast<float>(tokenLen))));
+                int distanceToToken = distance(enemy, tokens[tokenIToCircle]);
+                if (distanceToToken >= 200) {
+                    // Attract the enemy towards the token
+                    attract(enemy, tokens[tokenIToCircle]);
+                    // Update float positions
+                    enemy.fx += enemy.hv * deltaTime;
+                    enemy.fy += enemy.vv * deltaTime;
+                } else {
+                    // Circle around the token
+                    circleAroundObject(tokens[tokenIToCircle], enemy, 190);
+                }
             }
+
+            // Bounce off left/right edges
+            if (enemy.fx < 0) {
+                enemy.fx = 0;       // prevent going offscreen
+                enemy.hv *= -1;     // reverse X velocity
+            }
+            else if (enemy.fx > SCREEN_WIDTH - enemy.bounds.w) {
+                enemy.fx = SCREEN_WIDTH - enemy.bounds.w;
+                enemy.hv *= -1;
+            }
+
+            // Bounce off top/bottom edges
+            if (enemy.fy < 0) {
+                enemy.fy = 0;
+                enemy.vv *= -1;     // reverse Y velocity
+            }
+            else if (enemy.fy > SCREEN_HEIGHT - enemy.bounds.h) {
+                enemy.fy = SCREEN_HEIGHT - enemy.bounds.h;
+                enemy.vv *= -1;
+            }
+
+            // Update SDL_Rect for rendering
+            enemy.bounds.x = static_cast<int>(enemy.fx);
+            enemy.bounds.y = static_cast<int>(enemy.fy);
+            enemy.bounds.x = enemy.fx;
+            enemy.bounds.y = enemy.fy;
+            i++;
         }
 
-        // Bounce off left/right edges
-        if (enemy.fx < 0) {
-            enemy.fx = 0;       // prevent going offscreen
-            enemy.hv *= -1;     // reverse X velocity
+        // Move the tokens
+        for (auto& token : tokens) {
+            //token.fx += token.hv * deltaTime;
+            //token.fy += token.vv * deltaTime;
+            token.bounds.x = token.fx;
+            token.bounds.y = token.fy;
         }
-        else if (enemy.fx > SCREEN_WIDTH - enemy.bounds.w) {
-            enemy.fx = SCREEN_WIDTH - enemy.bounds.w;
-            enemy.hv *= -1;
-        }
-
-        // Bounce off top/bottom edges
-        if (enemy.fy < 0) {
-            enemy.fy = 0;
-            enemy.vv *= -1;     // reverse Y velocity
-        }
-        else if (enemy.fy > SCREEN_HEIGHT - enemy.bounds.h) {
-            enemy.fy = SCREEN_HEIGHT - enemy.bounds.h;
-            enemy.vv *= -1;
-        }
-
-        // Update SDL_Rect for rendering
-        enemy.bounds.x = static_cast<int>(enemy.fx);
-        enemy.bounds.y = static_cast<int>(enemy.fy);
-        enemy.bounds.x = enemy.fx;
-        enemy.bounds.y = enemy.fy;
-        i++;
-    }
-
-    // Move the tokens
-    for (auto& token : tokens) {
-        //token.fx += token.hv * deltaTime;
-        //token.fy += token.vv * deltaTime;
-        token.bounds.x = token.fx;
-        token.bounds.y = token.fy;
     }
 }
 
@@ -383,58 +489,77 @@ void renderSprite(Sprite &sprite) {
 }
 
 void render() {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Black background
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white background
     SDL_RenderClear(renderer);
 
-    // Draw the ball with its current color
-    //SDL_SetRenderDrawColor(renderer, colors[colorIndex].r, colors[colorIndex].g, colors[colorIndex].b, 255);
-    //SDL_RenderFillRect(renderer, &ball);
+    if (currentScreen == "menu") {
+        // Update enemy eaten text
+        std::string tokenseatenString = "Game: " + gameModeNames[currentGameMode];
+        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
 
-    // Draw player
-    if (enemyEaten < 3) {
-        renderSprite(playerSprite);
+        // Draw enemy eaten
+        SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
+        enemyEatenBounds.x = SCREEN_WIDTH / 2;
+        enemyEatenBounds.y = SCREEN_HEIGHT / 2 - 50;
+        SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
 
-        for (auto& enemy : enemies) {
-            renderSprite(enemy); // same function as before
+        // Update celery eaten text
+        std::string enemyEatenString = "A: Select    D-PAD: Navigate";
+        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[3]);
+
+        // Draw celery eaten
+        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
+        tokenseatenBounds.x = SCREEN_WIDTH / 2;
+        tokenseatenBounds.y = SCREEN_HEIGHT / 2 + 50;
+        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
+    }
+    if (currentScreen == "game") {
+        // Draw player
+        if (enemyEaten < 3) {
+            renderSprite(playerSprite);
+
+            for (auto& enemy : enemies) {
+                renderSprite(enemy); // same function as before
+            }
+
+            for (auto& token : tokens) {
+                renderSprite(token); // same function as before
+            }
         }
 
-        for (auto& token : tokens) {
-            renderSprite(token); // same function as before
+        // Draw pause message if game is paused
+        if (isGamePaused) {
+            SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseBounds);
         }
+
+        // Update celery eaten text
+        std::string enemyEatenString = "";
+        if (enemyEaten < 3) {
+            enemyEatenString = "Celery Eaten: " + std::to_string(enemyEaten) + "/3";
+        } else {
+            enemyEatenString = "You died! Press A to restart.";
+        }
+        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[3]);
+
+        // Draw celery eaten
+        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
+        tokenseatenBounds.x = 32;
+        tokenseatenBounds.y = 42;
+        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
+
+        // Update tokenseaten text
+        std::string tokenseatenString = "Chicken Eaten: " + std::to_string(tokenseaten);
+        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
+
+        // Draw enemy eaten
+        SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
+        enemyEatenBounds.x = 32;
+        enemyEatenBounds.y = 0;
+        SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
+
+        // Present everything on screen
+        SDL_RenderPresent(renderer);
     }
-
-    // Draw pause message if game is paused
-    if (isGamePaused) {
-        SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseBounds);
-    }
-
-    // Update celery eaten text
-    std::string enemyEatenString = "";
-    if (enemyEaten < 3) {
-        enemyEatenString = "Celery Eaten: " + std::to_string(enemyEaten) + "/3";
-    } else {
-        enemyEatenString = "You died! Press A to restart.";
-    }
-    updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[3]);
-
-    // Draw celery eaten
-    SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
-    tokenseatenBounds.x = 32;
-    tokenseatenBounds.y = 42;
-    SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
-
-    // Update tokenseaten text
-    std::string tokenseatenString = "Chicken Eaten: " + std::to_string(tokenseaten);
-    updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
-
-    // Draw enemy eaten
-    SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
-    enemyEatenBounds.x = 32;
-    enemyEatenBounds.y = 0;
-    SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
-
-    // Present everything on screen
-    SDL_RenderPresent(renderer);
 }
 
 // ------------------ MAIN FUNCTION ------------------
@@ -473,7 +598,7 @@ int main(int argc, char **argv) {
     // Initialize tokenseaten and pause textures
     updateTextureText(enemyEatenTexture, "Celery Eaten: 0/3", font, renderer, colors[3]);
     updateTextureText(tokenseatenTexture, "Chicken Eaten: 0", font, renderer, colors[8]);
-    updateTextureText(pauseTexture, "GAME PAUSED", font, renderer, colors[8]);
+    updateTextureText(pauseTexture, "GAME PAUSED. Press - to change game.", font, renderer, colors[8]);
 
     SDL_QueryTexture(pauseTexture, NULL, NULL, &pauseBounds.w, &pauseBounds.h);
     pauseBounds.x = SCREEN_WIDTH / 2 - pauseBounds.w / 2;
