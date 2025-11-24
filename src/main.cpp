@@ -108,7 +108,7 @@ Mix_Chunk *sound = nullptr;             // Short sound effects
 bool isGamePaused = false;              // Flag for pause state
 bool isGameRunning = true;              // Main loop control flag
 std::string currentScreen = "menu";
-int currentGameMode = 0; // 0 is classic, 1 is easy, 2 is impossible
+size_t currentGameMode = 0; // 0 is classic, 1 is easy, 2 is impossible
 
 
 // Pause screen
@@ -335,7 +335,7 @@ void update(float deltaTime) {
     // Move player based on controller input
     if (currentScreen == "menu") {
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
-            currentScreen = 1;            
+            currentScreen = "game";            
             isGamePaused = false;
             restartGame();
         }
@@ -348,7 +348,8 @@ void update(float deltaTime) {
             previousLeft = false;
         }
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
-            int gameModeLength = sizeof(gameModeNames);
+            //int gameModeLength = sizeof(gameModeNames);
+            size_t gameModeLength = sizeof(gameModeNames) / sizeof(gameModeNames[0]);
             if (currentGameMode < (gameModeLength - 1) && !previousRight) {
                 currentGameMode++;
             }
@@ -518,25 +519,25 @@ void render() {
     SDL_RenderClear(renderer);
 
     if (currentScreen == "menu") {
-        // Update enemy eaten text
+        // Update tokens eaten text
         std::string tokenseatenString = "Game: " + gameModeNames[currentGameMode];
         updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
+
+        // Draw tokens eaten
+        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
+        tokenseatenBounds.x = SCREEN_WIDTH / 2;
+        tokenseatenBounds.y = SCREEN_HEIGHT / 2 + 50;
+        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
+
+        // Update celery eaten text
+        std::string enemyEatenString = "A: Select    D-PAD: Navigate";
+        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[8]);
 
         // Draw enemy eaten
         SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
         enemyEatenBounds.x = SCREEN_WIDTH / 2;
         enemyEatenBounds.y = SCREEN_HEIGHT / 2 - 50;
         SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
-
-        // Update celery eaten text
-        std::string enemyEatenString = "A: Select    D-PAD: Navigate";
-        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[8]);
-
-        // Draw celery eaten
-        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
-        tokenseatenBounds.x = SCREEN_WIDTH / 2;
-        tokenseatenBounds.y = SCREEN_HEIGHT / 2 + 50;
-        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
     }
     if (currentScreen == "game") {
         // Draw player
