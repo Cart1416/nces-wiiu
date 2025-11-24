@@ -15,7 +15,7 @@ const std::string gameModeNames[] = {
     "IMPOSSIBLE Nic Cage Eats Stuff"
 };
 
-const std::string thingToCollectText[] = {
+const std::string tokenToCollectText[] = {
     "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: "
@@ -39,25 +39,25 @@ const std::string gameOverText[] = {
     "You are trash lol. Press A to restart or - to change game."
 };
 
-const std::string playerImage[] = {
+const char* playerImage[] = {
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png"
 };
 
-const std::string playerInvincibleImage[] = {
+const char* playerTransparentImage[] = {
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png"
 };
 
-const std::string tokenImage[] = {
+const char* tokenImage[] = {
     "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png"
 };
 
-const std::string enemyImage[] = {
+const char* enemyImage[] = {
     "sprites/celery.png",
     "sprites/celery.png",
     "sprites/celery.png"
@@ -126,6 +126,10 @@ SDL_Texture *enemyEatenTexture = nullptr;    // Texture for the tokenseaten
 SDL_Rect enemyEatenBounds;                   // Position and size of tokenseaten
 int enemyEaten = 0;                          // Enemy tokenseaten
 
+// misc display1
+SDL_Texture *miscTexture1 = nullptr;    // Texture for the tokenseaten
+SDL_Rect miscBounds1;                   // Position and size of tokenseaten
+
 // Font for text rendering
 TTF_Font *font = nullptr;               // Font used for tokenseaten/pause text
 
@@ -192,6 +196,10 @@ float rngFloat(float min, float max)
     return min + static_cast<float>(rand()) / RAND_MAX * (max - min);
 }
 
+bool contains(const std::vector<std::string>& vec, const std::string& value) {
+    return std::find(vec.begin(), vec.end(), value) != vec.end();
+}
+
 // Function to add an enemy
 void addEnemyCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, float hv = 0.0f, float vv = 0.0f)
 {
@@ -215,13 +223,16 @@ void addTokenCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, 
 // Function to add an enemy
 void addEnemy()
 {
-    addEnemyCustom(renderer, "sprites/celery.png", rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), rngFloat(enemySpeedMin, enemySpeedMax), rngFloat(enemySpeedMin, enemySpeedMax));
+    int enemyLen = static_cast<int>(enemies.size());
+    if (!(contains(gameModeModifiers[currentGameMode], "noEnemy")) && enemyLen < 200) {
+        addEnemyCustom(renderer, enemyImage[currentGameMode], rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), rngFloat(enemySpeedMin, enemySpeedMax), rngFloat(enemySpeedMin, enemySpeedMax));
+    }
 }
 
 // Function to add a token
 void addToken()
 {
-    addTokenCustom(renderer, "sprites/chicken.png", rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), 0.0f, 0.0f);
+    addTokenCustom(renderer, tokenImage[currentGameMode], rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), 0.0f, 0.0f);
 }
 
 // Helper funcs
@@ -306,9 +317,11 @@ void restartGame() {
     enemies.clear();
     tokens.clear();
     addEnemy();
-    addToken();
-    playerSprite.bounds.x = SCREEN_WIDTH / 2;
-    playerSprite.bounds.y = SCREEN_HEIGHT / 2;
+    for (int i = 0; i < tokenCount[currentGameMode]; i++) {
+        addToken();
+    }
+    playerSprite = loadSprite(renderer, playerImage[currentGameMode], SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    PLAYER_SPEED = playerSpeed[currentGameMode];
     enemyEaten = 0;
     tokenseaten = 0;
 }
@@ -351,11 +364,17 @@ void update(float deltaTime) {
                 if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
                     playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
                 }
+                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                    addEnemy();
+                }
             }
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
                 playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
                 if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
                     playerSprite.bounds.y = 0;
+                }
+                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                    addEnemy();
                 }
             }
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
@@ -363,11 +382,17 @@ void update(float deltaTime) {
                 if (playerSprite.bounds.x < -80) {
                     playerSprite.bounds.x = SCREEN_WIDTH;
                 }
+                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                    addEnemy();
+                }
             }
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
                 playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
                 if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
                     playerSprite.bounds.x = 0;
+                }
+                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                    addEnemy();
                 }
             }
         }
@@ -377,20 +402,20 @@ void update(float deltaTime) {
         mouth.h = 20;
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
             if (previousInvulnerable == false) {
-                playerSprite.texture = IMG_LoadTexture(renderer, "sprites/NicCageFaceTransparent.png");
+                playerSprite.texture = IMG_LoadTexture(renderer, playerTransparentImage[currentGameMode]);
             }
             playerSprite.invulnerable = true;
             playerSprite.immobile = true;
             previousInvulnerable = true;
         } else {
             if (previousInvulnerable == true) {
-                playerSprite.texture = IMG_LoadTexture(renderer, "sprites/NicCageFace.png");
+                playerSprite.texture = IMG_LoadTexture(renderer, playerImage[currentGameMode]);
             }
             playerSprite.invulnerable = false;
             playerSprite.immobile = false;
             previousInvulnerable = false;
         }
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= 3) {
+        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= maxEnemyEaten[currentGameMode]) {
             restartGame();
         }
 
@@ -505,7 +530,7 @@ void render() {
 
         // Update celery eaten text
         std::string enemyEatenString = "A: Select    D-PAD: Navigate";
-        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[3]);
+        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[8]);
 
         // Draw celery eaten
         SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
@@ -535,27 +560,42 @@ void render() {
         // Update celery eaten text
         std::string enemyEatenString = "";
         if (enemyEaten < 3) {
-            enemyEatenString = "Celery Eaten: " + std::to_string(enemyEaten) + "/3";
+            enemyEatenString = enemyToCollectText[currentGameMode] + std::to_string(enemyEaten) + "/" + std::to_string(maxEnemyEaten[currentGameMode]);
         } else {
-            enemyEatenString = "You died! Press A to restart.";
+            enemyEatenString = gameOverText[currentGameMode];
         }
         updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[3]);
-
-        // Draw celery eaten
-        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
-        tokenseatenBounds.x = 32;
-        tokenseatenBounds.y = 42;
-        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
-
-        // Update tokenseaten text
-        std::string tokenseatenString = "Chicken Eaten: " + std::to_string(tokenseaten);
-        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
 
         // Draw enemy eaten
         SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
         enemyEatenBounds.x = 32;
         enemyEatenBounds.y = 0;
         SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
+
+        // Update tokenseaten text
+        std::string tokenseatenString = tokenToCollectText[currentGameMode] + std::to_string(tokenseaten);
+        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
+
+        // Draw tokens eaten
+        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
+        tokenseatenBounds.x = 32;
+        tokenseatenBounds.y = 42;
+        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
+
+        // Update misc1 text
+        std::string miscString1 = "";
+        int enemyLen = static_cast<int>(enemies.size());
+        if (enemyLen >= 200) {
+            miscString1 = "Enemy limit of 200 reached!";
+        }
+        updateTextureText(miscTexture1, miscString1.c_str(), font, renderer, colors[8]);
+
+        // Draw misc1
+        SDL_QueryTexture(miscTexture1, NULL, NULL, &miscBounds1.w, &miscBounds1.h);
+        miscBounds1.x = 32;
+        miscBounds1.y = 62;
+        SDL_RenderCopy(renderer, miscTexture1, NULL, &miscBounds1);
+
 
         // Present everything on screen
         SDL_RenderPresent(renderer);
