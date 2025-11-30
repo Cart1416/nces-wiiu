@@ -39,6 +39,8 @@ struct Sprite {
     bool protectingToken = false;
     bool invulnerable = false;
     bool immobile = false;
+    bool evil = false;
+    int evilTimer = 0;
 };
 
 int startSDLSystems(SDL_Window *window, SDL_Renderer *renderer);

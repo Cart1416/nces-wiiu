@@ -12,10 +12,12 @@
 const std::string gameModeNames[] = {
     "Nic Cage Eats Stuff",
     "EASY Nic Cage Eats Stuff",
-    "IMPOSSIBLE Nic Cage Eats Stuff"
+    "IMPOSSIBLE Nic Cage Eats Stuff",
+    "Nic Cage Eats Stuff 2"
 };
 
 const std::string tokenToCollectText[] = {
+    "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: "
@@ -24,22 +26,26 @@ const std::string tokenToCollectText[] = {
 const std::string enemyToCollectText[] = {
     "Celery eaten: ",
     "Celery eaten: ",
+    "Celery eaten: ",
     "Celery eaten: "
 };
 
 const int maxEnemyEaten[] = {
     3,
     999,
-    10
+    10,
+    3
 };
 
 const std::string gameOverText[] = {
     "You died! Press A to restart or - to change game.",
     "How did you die? Press A to restart or - to change game.",
-    "You are trash lol. Press A to restart or - to change game."
+    "You are trash lol. Press A to restart or - to change game.",
+    "GAME OVER. Press A to restart or - to change game."
 };
 
 const char* playerImage[] = {
+    "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png"
@@ -48,10 +54,12 @@ const char* playerImage[] = {
 const char* playerTransparentImage[] = {
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png",
+    "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png"
 };
 
 const char* tokenImage[] = {
+    "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png"
@@ -60,24 +68,28 @@ const char* tokenImage[] = {
 const char* enemyImage[] = {
     "sprites/celery.png",
     "sprites/celery.png",
+    "sprites/celery.png",
     "sprites/celery.png"
 };
 
 const int tokenCount[] = {
     1,
     5,
+    1,
     1
 };
 
 const std::vector<std::vector<std::string>> gameModeModifiers = {
     {},
     {"noEnemy"},
-    {"spawnEnemyOnMove"}
+    {"spawnEnemyOnMove"},
+    {"angryCelery", "blackEndScreen", "altUI", "enemiesBounce", "randomSizeEnemies", "noCircle"}
 };
 
 const int playerSpeed[] = {
     250,
     500,
+    250,
     250
 };
 
@@ -140,6 +152,7 @@ int ballVelocityY = 400;                // Ball velocity Y (pixels/sec)
 
 // Enemy sprite
 Sprite enemySprite;                    // Custom struct representing the enemy
+int evilEnemyTimer = 1800;
 
 std::vector<Sprite> enemies;
 float enemySpeedMin = 120.0f;
@@ -206,6 +219,12 @@ void addEnemyCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, 
 {
     // Load the sprite with optional speed
     Sprite newEnemy = loadSprite(renderer, filePath, x, y, hv, vv);
+
+    if (contains(gameModeModifiers[currentGameMode], "randomSizeEnemies")) {
+        float enemySizeMultiplier = rngFloat(0.5f, 2.0f);
+        newEnemy.bounds.w *= enemySizeMultiplier;
+        newEnemy.bounds.h *= enemySizeMultiplier;
+    }
 
     // Add it to the dynamic vector
     enemies.push_back(newEnemy);
@@ -317,6 +336,7 @@ float distance(const Sprite& object1, const Sprite& object2) {
 void restartGame() {
     enemies.clear();
     tokens.clear();
+    evilEnemyTimer = 1800;
     addEnemy();
     for (int i = 0; i < tokenCount[currentGameMode]; i++) {
         addToken();
@@ -435,11 +455,20 @@ void update(float deltaTime) {
             if (SDL_HasIntersection(&mouth, &token.bounds)) {
                 Mix_PlayChannel(-1, sound, 0); // Play collision sound
                 tokenseaten++;                        // Increment tokenseaten
-                token.fx = rng(0, SCREEN_WIDTH);
-                token.fy = rng(0, SCREEN_HEIGHT);
+                token.fx = rng(0, SCREEN_WIDTH - 10);
+                token.fy = rng(0, SCREEN_HEIGHT - 10);
                 if (tokenseaten % 3 == 0) {
                     addEnemy();
                 }
+            }
+        }
+
+        if (contains(gameModeModifiers[currentGameMode], "angryCelery")) {
+            evilEnemyTimer--;
+            if (evilEnemyTimer <= 0) {
+                enemies[0].evil = true;
+                enemies[0].evilTimer = 900;
+                evilEnemyTimer = 1800;
             }
         }
 
@@ -448,7 +477,7 @@ void update(float deltaTime) {
         for (auto& enemy : enemies) {
             int enemyLen = static_cast<int>(enemies.size());
             int tokenLen = static_cast<int>(tokens.size());
-            if (enemyLen % 4 == 0) {
+            if (enemyLen % 4 == 0 && !(contains(gameModeModifiers[currentGameMode], "noCircle"))) {
                 enemy.protectingToken = true;
             } else {
                 enemy.protectingToken = false;
@@ -468,6 +497,32 @@ void update(float deltaTime) {
                 } else {
                     // Circle around the token
                     circleAroundObject(tokens[tokenIToCircle], enemy, 190);
+                }
+            }
+
+            if (contains(gameModeModifiers[currentGameMode], "enemiesBounce")) {
+                int ii = 0;
+                for (auto& enemy2 : enemies) {
+                    if (SDL_HasIntersection(&enemy.bounds, &enemy2.bounds) && i != ii) {
+                        enemy.hv = -enemy.hv;
+                        enemy.vv = -enemy.vv;
+                        enemy.fx += enemy.hv * deltaTime * 3;
+                        enemy.fy += enemy.vv * deltaTime * 3;
+                    }
+                    ii++;
+                }
+            }
+
+            if (enemy.evilTimer > 0) {
+                --enemy.evilTimer;
+                if (enemy.evilTimer == 899) {
+                    enemy.texture = IMG_LoadTexture(renderer, "sprites/red_celery.png");
+                    enemy.hv *= 3;
+                    enemy.vv *= 3;
+                } else if (enemy.evilTimer == 1) {
+                    enemy.texture = IMG_LoadTexture(renderer, enemyImage[currentGameMode]);
+                    enemy.hv /= 3;
+                    enemy.vv /= 3;
                 }
             }
 
@@ -516,7 +571,11 @@ void renderSprite(Sprite &sprite) {
 }
 
 void render() {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white background
+    int backgroundColors = 255;
+    if (currentScreen == "game" && contains(gameModeModifiers[currentGameMode], "blackEndScreen") && enemyEaten >= maxEnemyEaten[currentGameMode]) {
+        backgroundColors = 0;
+    }
+    SDL_SetRenderDrawColor(renderer, backgroundColors, backgroundColors, backgroundColors, 255); // white background
     SDL_RenderClear(renderer);
 
     if (currentScreen == "menu") {
@@ -561,27 +620,49 @@ void render() {
 
         // Update celery eaten text
         std::string enemyEatenString = "";
+        int enemyEatenColor = 3;
         if (enemyEaten < maxEnemyEaten[currentGameMode]) {
             enemyEatenString = enemyToCollectText[currentGameMode] + std::to_string(enemyEaten) + "/" + std::to_string(maxEnemyEaten[currentGameMode]);
         } else {
             enemyEatenString = gameOverText[currentGameMode];
+            if (contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
+                enemyEatenColor = 1;
+            }
         }
-        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[3]);
+        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[enemyEatenColor]);
 
         // Draw enemy eaten
         SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
-        enemyEatenBounds.x = 32;
-        enemyEatenBounds.y = 0;
+        if (contains(gameModeModifiers[currentGameMode], "altUI")) {
+            if (enemyEaten >= maxEnemyEaten[currentGameMode]) {
+                enemyEatenBounds.x = 0;
+            } else {
+                enemyEatenBounds.x = SCREEN_WIDTH - enemyEatenBounds.w - 400;
+            }
+            enemyEatenBounds.y = 0;
+        } else {
+            enemyEatenBounds.x = 32;
+            enemyEatenBounds.y = 0;
+        }
         SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
 
         // Update tokenseaten text
+        int tokensEatenColor = 8;
+        if (enemyEaten >= maxEnemyEaten[currentGameMode] && contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
+            tokensEatenColor = 1;
+        }
         std::string tokenseatenString = tokenToCollectText[currentGameMode] + std::to_string(tokenseaten);
-        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
+        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[tokensEatenColor]);
 
         // Draw tokens eaten
         SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
-        tokenseatenBounds.x = 32;
-        tokenseatenBounds.y = 40;
+        if (contains(gameModeModifiers[currentGameMode], "altUI")) {
+            tokenseatenBounds.x = SCREEN_WIDTH - tokenseatenBounds.w;
+            tokenseatenBounds.y = 0;
+        } else {
+            tokenseatenBounds.x = 32;
+            tokenseatenBounds.y = 40;
+        }
         SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
 
         // Update misc1 text
