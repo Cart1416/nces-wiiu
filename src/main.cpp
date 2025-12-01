@@ -103,7 +103,8 @@ int rng(int min, int max) {
 // SDL objects
 SDL_Window *window = nullptr;           // The game window
 SDL_Renderer *renderer = nullptr;       // The rendering context for the window
-SDL_GameController *controller = nullptr; // The game controller (Wii U Pro Controller)
+SDL_GameController *controller = nullptr; // The game controller (Wii U Gamepad)
+SDL_GameController *controller1 = nullptr; // The game controller (Wii U Pro Controller 1)
 
 // Game constants
 int PLAYER_SPEED = 250;           // Player movement speed in pixels/sec
@@ -195,6 +196,23 @@ void handleEvents() {
                 isGamePaused = !isGamePaused;
                 Mix_PlayChannel(-1, sound, 0); // Play sound effect
             }
+        }
+        if (event.type == SDL_CONTROLLERDEVICEADDED) {
+            // Controller was connected!
+            // refresh all controllers
+            SDL_GameControllerClose(controller);
+            controller = SDL_GameControllerOpen(0);
+            SDL_GameControllerClose(controller1);
+            controller1 = SDL_GameControllerOpen(1);
+        }
+
+        if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
+            // Controller was removed!
+            // refresh all controllers
+            SDL_GameControllerClose(controller);
+            controller = SDL_GameControllerOpen(0);
+            SDL_GameControllerClose(controller1);
+            controller1 = SDL_GameControllerOpen(1);
         }
     }
 }
@@ -590,7 +608,7 @@ void render() {
         SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
 
         // Update celery eaten text
-        std::string enemyEatenString = "A: Select    D-PAD: Navigate";
+        std::string enemyEatenString = "A: Select    D-PAD: Navigate" + std::to_string(SDL_GameControllerGetPlayerIndex(controller1));
         updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[8]);
 
         // Draw enemy eaten
@@ -704,6 +722,7 @@ int main(int argc, char **argv) {
 
     // Controller always connected on this console
     controller = SDL_GameControllerOpen(0);
+    controller1 = SDL_GameControllerOpen(1);
 
     srand(time(NULL));
 
