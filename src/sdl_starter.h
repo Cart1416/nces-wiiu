@@ -43,6 +43,7 @@ struct Sprite {
     int evilTimer = 0;
     SDL_GameController* controller = nullptr;
     int controllerId = -1;
+    bool previousInvulnerable = false;
 };
 
 int startSDLSystems(SDL_Window *window, SDL_Renderer *renderer);

@@ -512,6 +512,9 @@ void update(float deltaTime) {
                     if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
                         playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
                     }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
                 }
                 if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
                     playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
@@ -525,6 +528,9 @@ void update(float deltaTime) {
                     playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
                     if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
                         playerSprite.bounds.y = 0;
+                    }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
                     }
                 }
                 if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
@@ -540,6 +546,9 @@ void update(float deltaTime) {
                     if (playerSprite.bounds.x < -80) {
                         playerSprite.bounds.x = SCREEN_WIDTH;
                     }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
                 }
                 if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
                     playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
@@ -554,26 +563,29 @@ void update(float deltaTime) {
                     if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
                         playerSprite.bounds.x = 0;
                     }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
                 }
             }
             mouths[playerI2].x = playerSprite.bounds.x + 27;
             mouths[playerI2].y = playerSprite.bounds.y + 88;
             mouths[playerI2].w = 40;
             mouths[playerI2].h = 20;
-            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
-                if (previousInvulnerable == false) {
+            if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_A)) {
+                if (playerSprite.previousInvulnerable == false) {
                     playerSprite.texture = IMG_LoadTexture(renderer, playerTransparentImage[currentGameMode]);
                 }
                 playerSprite.invulnerable = true;
                 playerSprite.immobile = true;
-                previousInvulnerable = true;
+                playerSprite.previousInvulnerable = true;
             } else {
-                if (previousInvulnerable == true) {
+                if (playerSprite.previousInvulnerable == true) {
                     playerSprite.texture = IMG_LoadTexture(renderer, playerImage[currentGameMode]);
                 }
                 playerSprite.invulnerable = false;
                 playerSprite.immobile = false;
-                previousInvulnerable = false;
+                playerSprite.previousInvulnerable = false;
             }
             playerI2++;
         }
