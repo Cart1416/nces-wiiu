@@ -182,6 +182,11 @@ SDL_Color colors[] = {
 
 // ------------------ EVENT HANDLING ------------------
 void refreshControllers() {
+    SDL_GameControllerClose(controller);
+    SDL_GameControllerClose(controller1);
+    SDL_GameControllerClose(controller2);
+    SDL_GameControllerClose(controller3);
+    SDL_GameControllerClose(controller4);
     auto* firstConnectedController = SDL_GameControllerOpen(0);
     auto* secondConnectedController = SDL_GameControllerOpen(1);
     auto* thirdConnectedController = SDL_GameControllerOpen(2);
@@ -245,6 +250,20 @@ void refreshControllers() {
         controller3 = fifthConnectedController;
     } else if (SDL_GameControllerGetPlayerIndex(fifthConnectedController) == 4) {
         controller4 = fifthConnectedController;
+    }
+
+    for (auto& player : players) {
+        if (player.controllerId == 0) {
+            player.controller = controller;
+        } else if (player.controllerId == 1) {
+            player.controller = controller1;
+        } else if (player.controllerId == 2) {
+            player.controller = controller2;
+        } else if (player.controllerId == 3) {
+            player.controller = controller3;
+        } else if (player.controllerId == 4) {
+            player.controller = controller4;
+        }
     }
 }
 
@@ -464,6 +483,12 @@ void restartGame() {
             player.controller = controller;
         } else if (player.controllerId == 1) {
             player.controller = controller1;
+        } else if (player.controllerId == 2) {
+            player.controller = controller2;
+        } else if (player.controllerId == 3) {
+            player.controller = controller3;
+        } else if (player.controllerId == 4) {
+            player.controller = controller4;
         }
     }
     enemyEaten = 0;
@@ -790,11 +815,17 @@ void render() {
     SDL_SetRenderDrawColor(renderer, backgroundColors, backgroundColors, backgroundColors, 255); // white background
     SDL_RenderClear(renderer);
 
-    drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller)), 0, 200);
-    drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller1)), 0, 300);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller)), 0, 200);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller1)), 0, 300);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller2)), 0, 400);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller3)), 0, 500);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller4)), 0, 600);
 
-    drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller)), 100, 200);
-    drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller1)), 100, 300);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller)), 100, 200);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller1)), 100, 300);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller2)), 100, 400);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller3)), 100, 500);
+    //drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller4)), 100, 600);
 
     if (currentScreen == "menu") {
         // Update selected game text
@@ -809,9 +840,9 @@ void render() {
             //renderSprite(playerSprite);
             int i = 0;
             for (auto& player : players) {
-                drawText(renderer, std::to_string(SDL_GameControllerGetAttached(player.controller)), 50, 200 + (i * 100));
-                drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(player.controller)), 150, 200 + (i * 100));
-                drawText(renderer, std::to_string(player.controllerId), 200, 200 + (i * 100));
+                //drawText(renderer, std::to_string(SDL_GameControllerGetAttached(player.controller)), 50, 200 + (i * 100));
+                //drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(player.controller)), 150, 200 + (i * 100));
+                //drawText(renderer, std::to_string(player.controllerId), 200, 200 + (i * 100));
                 if (player.controller != nullptr && SDL_GameControllerGetAttached(player.controller)) {
                     renderSprite(player); // same function as before
                     if (controller1 != nullptr && SDL_GameControllerGetAttached(controller1)) {
