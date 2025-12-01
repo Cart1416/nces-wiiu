@@ -202,19 +202,57 @@ void handleEvents() {
         if (event.type == SDL_CONTROLLERDEVICEADDED) {
             // Controller was connected!
             // refresh all controllers
-            SDL_GameControllerClose(controller);
-            controller = SDL_GameControllerOpen(0);
-            SDL_GameControllerClose(controller1);
-            controller1 = SDL_GameControllerOpen(1);
+            //SDL_GameControllerClose(controller);
+            //controller = SDL_GameControllerOpen(0);
+            //SDL_GameControllerClose(controller1);
+            //controller1 = SDL_GameControllerOpen(1);
+            auto* firstConnectedController = SDL_GameControllerOpen(0);
+            auto* secondConnectedController = SDL_GameControllerOpen(1);
+            if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
+                controller = firstConnectedController;
+            } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
+                controller1 = firstConnectedController;
+            }
+            if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
+                controller = secondConnectedController;
+            } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
+                controller1 = secondConnectedController;
+            }
+            for (auto& player : players) {
+                if (player.controllerId == 0) {
+                    player.controller = controller;
+                } else if (player.controllerId == 1) {
+                    player.controller = controller1;
+                }
+            }
         }
 
         if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
             // Controller was removed!
             // refresh all controllers
-            SDL_GameControllerClose(controller);
-            controller = SDL_GameControllerOpen(0);
-            SDL_GameControllerClose(controller1);
-            controller1 = SDL_GameControllerOpen(1);
+            //SDL_GameControllerClose(controller);
+            //controller = SDL_GameControllerOpen(0);
+            //SDL_GameControllerClose(controller1);
+            //controller1 = SDL_GameControllerOpen(1);
+            auto* firstConnectedController = SDL_GameControllerOpen(0);
+            auto* secondConnectedController = SDL_GameControllerOpen(1);
+            if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
+                controller = firstConnectedController;
+            } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
+                controller1 = firstConnectedController;
+            }
+            if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
+                controller = secondConnectedController;
+            } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
+                controller1 = secondConnectedController;
+            }
+            for (auto& player : players) {
+                if (player.controllerId == 0) {
+                    player.controller = controller;
+                } else if (player.controllerId == 1) {
+                    player.controller = controller1;
+                }
+            }
         }
     }
 }
@@ -235,8 +273,7 @@ bool contains(const std::vector<std::string>& vec, const std::string& value) {
 }
 
 // Function to add an enemy
-void addEnemyCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, float hv = 0.0f, float vv = 0.0f)
-{
+void addEnemyCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, float hv = 0.0f, float vv = 0.0f) {
     // Load the sprite with optional speed
     Sprite newEnemy = loadSprite(renderer, filePath, x, y, hv, vv);
 
@@ -251,8 +288,7 @@ void addEnemyCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, 
 }
 
 // Function to add a token
-void addTokenCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, float hv = 0.0f, float vv = 0.0f)
-{
+void addTokenCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, float hv = 0.0f, float vv = 0.0f) {
     // Load the sprite with optional speed
     Sprite newToken = loadSprite(renderer, filePath, x, y, hv, vv);
 
@@ -260,8 +296,10 @@ void addTokenCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, 
     tokens.push_back(newToken);
 }
 
-void addPlayerCustom(SDL_Renderer* renderer, const char* filePath, int x, int y) {
+void addPlayerCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, SDL_GameController* controller = controller, int controllerId = 0) {
     Sprite newPlayer = loadSprite(renderer, filePath, x, y);
+    newPlayer.controller = controller;
+    newPlayer.controllerId = controllerId;
 
     players.push_back(newPlayer);
 
@@ -276,8 +314,7 @@ void addPlayerCustom(SDL_Renderer* renderer, const char* filePath, int x, int y)
 }
 
 // Function to add an enemy
-void addEnemy()
-{
+void addEnemy() {
     int enemyLen = static_cast<int>(enemies.size());
     if (!(contains(gameModeModifiers[currentGameMode], "noEnemy")) && enemyLen < 200) {
         addEnemyCustom(renderer, enemyImage[currentGameMode], rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), rngFloat(enemySpeedMin, enemySpeedMax), rngFloat(enemySpeedMin, enemySpeedMax));
@@ -285,9 +322,12 @@ void addEnemy()
 }
 
 // Function to add a token
-void addToken()
-{
+void addToken() {
     addTokenCustom(renderer, tokenImage[currentGameMode], rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), 0.0f, 0.0f);
+}
+
+void addPlayer(SDL_GameController* controller = controller, int controllerId = 0) {
+    addPlayerCustom(renderer, playerImage[currentGameMode], SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, controller, controllerId);
 }
 
 // Helper funcs
@@ -371,6 +411,8 @@ float distance(const Sprite& object1, const Sprite& object2) {
 void restartGame() {
     enemies.clear();
     tokens.clear();
+    players.clear();
+    mouths.clear();
     evilEnemyTimer = 1800;
     addEnemy();
     for (int i = 0; i < tokenCount[currentGameMode]; i++) {
@@ -378,6 +420,15 @@ void restartGame() {
     }
     playerSprite = loadSprite(renderer, playerImage[currentGameMode], SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     PLAYER_SPEED = playerSpeed[currentGameMode];
+    addPlayer(controller, 0);
+    addPlayer(controller1, 1);
+    for (auto& player : players) {
+        if (player.controllerId == 0) {
+            player.controller = controller;
+        } else if (player.controllerId == 1) {
+            player.controller = controller1;
+        }
+    }
     enemyEaten = 0;
     tokenseaten = 0;
 }
@@ -390,132 +441,172 @@ bool previousRight = false;
 void update(float deltaTime) {
     // Move player based on controller input
     if (currentScreen == "menu") {
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
-            currentScreen = "game";            
-            isGamePaused = false;
-            restartGame();
-        }
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
-            if (currentGameMode > 0 && !previousLeft) {
-                currentGameMode--;
+        if (SDL_GameControllerGetPlayerIndex(playerSprite.controller) >= 0 && playerSprite.controller != nullptr && SDL_GameControllerGetAttached(playerSprite.controller)) {
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
+                currentScreen = "game";            
+                isGamePaused = false;
+                restartGame();
             }
-            previousLeft = true;
-        } else {
-            previousLeft = false;
-        }
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
-            //int gameModeLength = sizeof(gameModeNames);
-            size_t gameModeLength = sizeof(gameModeNames) / sizeof(gameModeNames[0]);
-            if (currentGameMode < (gameModeLength - 1) && !previousRight) {
-                currentGameMode++;
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+                if (currentGameMode > 0 && !previousLeft) {
+                    currentGameMode--;
+                }
+                previousLeft = true;
+            } else {
+                previousLeft = false;
             }
-            previousRight = true;
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+                //int gameModeLength = sizeof(gameModeNames);
+                size_t gameModeLength = sizeof(gameModeNames) / sizeof(gameModeNames[0]);
+                if (currentGameMode < (gameModeLength - 1) && !previousRight) {
+                    currentGameMode++;
+                }
+                previousRight = true;
+            } else {
+                previousRight = false;
+            }
         } else {
-            previousRight = false;
+            if (SDL_GameControllerGetButton(controller1, SDL_CONTROLLER_BUTTON_A)) {
+                currentScreen = "game";            
+                isGamePaused = false;
+                restartGame();
+            }
+            if (SDL_GameControllerGetButton(controller1, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+                if (currentGameMode > 0 && !previousLeft) {
+                    currentGameMode--;
+                }
+                previousLeft = true;
+            } else {
+                previousLeft = false;
+            }
+            if (SDL_GameControllerGetButton(controller1, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+                //int gameModeLength = sizeof(gameModeNames);
+                size_t gameModeLength = sizeof(gameModeNames) / sizeof(gameModeNames[0]);
+                if (currentGameMode < (gameModeLength - 1) && !previousRight) {
+                    currentGameMode++;
+                }
+                previousRight = true;
+            } else {
+                previousRight = false;
+            }
         }
     }
     if (currentScreen == "game") {
-        if (!playerSprite.immobile && enemyEaten < maxEnemyEaten[currentGameMode]) {
-            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
-                playerSprite.bounds.y -= PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
-                    playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+        int playerI2 = 0;
+        for (auto& playerSprite : players) {
+            if (SDL_GameControllerGetPlayerIndex(playerSprite.controller) >= 0 && playerSprite.controller != nullptr && SDL_GameControllerGetAttached(playerSprite.controller)) {
+                playerSprite.controllerId = SDL_GameControllerGetPlayerIndex(playerSprite.controller);
+            }
+            auto currentController = playerSprite.controller;
+            if (!playerSprite.immobile && enemyEaten < maxEnemyEaten[currentGameMode]) {
+                if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
+                    playerSprite.bounds.y -= PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
+                        playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+                    }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
+                } else if (static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTY) / 32768.0f) < -0.1f) {
+                    playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
+                        playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+                    }
                 }
-                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
-                    addEnemy();
+                if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
+                    playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
+                        playerSprite.bounds.y = 0;
+                    }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
+                } else if (static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTY) / 32768.0f) > 0.1f) {
+                    playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
+                        playerSprite.bounds.y = 0;
+                    }
                 }
-            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) / 32768.0f) < -0.1f) {
-                playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
-                    playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+                if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+                    playerSprite.bounds.x -= PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.x < -80) {
+                        playerSprite.bounds.x = SCREEN_WIDTH;
+                    }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
+                } else if (static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTX) / 32768.0f) < -0.1f) {
+                    playerSprite.bounds.x += static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTX)) / 32768 * PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.x < -80) {
+                        playerSprite.bounds.x = SCREEN_WIDTH;
+                    }
+                }
+                if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+                    playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
+                        playerSprite.bounds.x = 0;
+                    }
+                    if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
+                        addEnemy();
+                    }
+                } else if (static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTX) / 32768.0f) > 0.1f) {
+                    playerSprite.bounds.x += static_cast<float>(SDL_GameControllerGetAxis(currentController, SDL_CONTROLLER_AXIS_LEFTX)) / 32768 * PLAYER_SPEED * deltaTime;
+                    if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
+                        playerSprite.bounds.x = 0;
+                    }
                 }
             }
-            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
-                playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
-                    playerSprite.bounds.y = 0;
+            mouths[playerI2].x = playerSprite.bounds.x + 27;
+            mouths[playerI2].y = playerSprite.bounds.y + 88;
+            mouths[playerI2].w = 40;
+            mouths[playerI2].h = 20;
+            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
+                if (previousInvulnerable == false) {
+                    playerSprite.texture = IMG_LoadTexture(renderer, playerTransparentImage[currentGameMode]);
                 }
-                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
-                    addEnemy();
+                playerSprite.invulnerable = true;
+                playerSprite.immobile = true;
+                previousInvulnerable = true;
+            } else {
+                if (previousInvulnerable == true) {
+                    playerSprite.texture = IMG_LoadTexture(renderer, playerImage[currentGameMode]);
                 }
-            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) / 32768.0f) > 0.1f) {
-                playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
-                    playerSprite.bounds.y = 0;
-                }
+                playerSprite.invulnerable = false;
+                playerSprite.immobile = false;
+                previousInvulnerable = false;
             }
-            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
-                playerSprite.bounds.x -= PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.x < -80) {
-                    playerSprite.bounds.x = SCREEN_WIDTH;
-                }
-                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
-                    addEnemy();
-                }
-            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) / 32768.0f) < -0.1f) {
-                playerSprite.bounds.x += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX)) / 32768 * PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.x < -80) {
-                    playerSprite.bounds.x = SCREEN_WIDTH;
-                }
-            }
-            if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
-                playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
-                    playerSprite.bounds.x = 0;
-                }
-                if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
-                    addEnemy();
-                }
-            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) / 32768.0f) > 0.1f) {
-                playerSprite.bounds.x += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX)) / 32768 * PLAYER_SPEED * deltaTime;
-                if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
-                    playerSprite.bounds.x = 0;
-                }
-            }
-        }
-        mouth.x = playerSprite.bounds.x + 27;
-        mouth.y = playerSprite.bounds.y + 88;
-        mouth.w = 40;
-        mouth.h = 20;
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
-            if (previousInvulnerable == false) {
-                playerSprite.texture = IMG_LoadTexture(renderer, playerTransparentImage[currentGameMode]);
-            }
-            playerSprite.invulnerable = true;
-            playerSprite.immobile = true;
-            previousInvulnerable = true;
-        } else {
-            if (previousInvulnerable == true) {
-                playerSprite.texture = IMG_LoadTexture(renderer, playerImage[currentGameMode]);
-            }
-            playerSprite.invulnerable = false;
-            playerSprite.immobile = false;
-            previousInvulnerable = false;
+            playerI2++;
         }
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= maxEnemyEaten[currentGameMode]) {
             restartGame();
         }
+        
+        int playerI = 0;
+        for (auto& playerSprite : players) {
+            if (playerSprite.controller != nullptr && SDL_GameControllerGetAttached(playerSprite.controller)) {
+                // enemy collision with player
+                for (auto& enemy : enemies) {
+                    if (SDL_HasIntersection(&mouths[playerI], &enemy.bounds) && !playerSprite.invulnerable) {
+                        enemyEaten++;                        // Increment enemy eaten
+                        enemy.fx = rng(0, SCREEN_WIDTH);
+                        enemy.fy = rng(0, SCREEN_HEIGHT);
+                    }
+                }
 
-        // enemy collision with player
-        for (auto& enemy : enemies) {
-            if (SDL_HasIntersection(&mouth, &enemy.bounds) && !playerSprite.invulnerable) {
-                enemyEaten++;                        // Increment enemy eaten
-                enemy.fx = rng(0, SCREEN_WIDTH);
-                enemy.fy = rng(0, SCREEN_HEIGHT);
-            }
-        }
-
-        // token collision with player
-        for (auto& token : tokens) {
-            if (SDL_HasIntersection(&mouth, &token.bounds)) {
-                Mix_PlayChannel(-1, sound, 0); // Play collision sound
-                tokenseaten++;                        // Increment tokenseaten
-                token.fx = rng(0, SCREEN_WIDTH - 10);
-                token.fy = rng(0, SCREEN_HEIGHT - 10);
-                if (tokenseaten % 3 == 0) {
-                    addEnemy();
+                // token collision with player
+                for (auto& token : tokens) {
+                    if (SDL_HasIntersection(&mouths[playerI], &token.bounds)) {
+                        Mix_PlayChannel(-1, sound, 0); // Play collision sound
+                        tokenseaten++;                        // Increment tokenseaten
+                        token.fx = rng(0, SCREEN_WIDTH - 10);
+                        token.fy = rng(0, SCREEN_HEIGHT - 10);
+                        if (tokenseaten % 3 == 0) {
+                            addEnemy();
+                        }
+                    }
                 }
             }
+            playerI++;
         }
 
         if (contains(gameModeModifiers[currentGameMode], "angryCelery")) {
@@ -625,12 +716,11 @@ void renderSprite(Sprite &sprite) {
     SDL_RenderCopy(renderer, sprite.texture, NULL, &sprite.bounds);
 }
 
-void drawText(SDL_Renderer* renderer, std::string text, int x, int y, SDL_Color color, std::string positioning = "") {
+void drawText(SDL_Renderer* renderer, std::string text, int x, int y, SDL_Color color = colors[8], std::string positioning = "") {
     SDL_Texture *textTexture = nullptr;
     updateTextureText(textTexture, text.c_str(), font, renderer, color);
     SDL_Rect textBounds;
 
-    // Draw tokens eaten
     SDL_QueryTexture(textTexture, NULL, NULL, &textBounds.w, &textBounds.h);
     textBounds.y = y;
     textBounds.x = x;
@@ -651,6 +741,12 @@ void render() {
     SDL_SetRenderDrawColor(renderer, backgroundColors, backgroundColors, backgroundColors, 255); // white background
     SDL_RenderClear(renderer);
 
+    drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller)), 0, 200);
+    drawText(renderer, std::to_string(SDL_GameControllerGetAttached(controller1)), 0, 300);
+
+    drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller)), 100, 200);
+    drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(controller1)), 100, 300);
+
     if (currentScreen == "menu") {
         // Update selected game text
         drawText(renderer, "Game: " + gameModeNames[currentGameMode], SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50, colors[8], "center");
@@ -661,7 +757,20 @@ void render() {
     if (currentScreen == "game") {
         // Draw player
         if (enemyEaten < maxEnemyEaten[currentGameMode]) {
-            renderSprite(playerSprite);
+            //renderSprite(playerSprite);
+            int i = 0;
+            for (auto& player : players) {
+                drawText(renderer, std::to_string(SDL_GameControllerGetAttached(player.controller)), 50, 200 + (i * 100));
+                drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(player.controller)), 150, 200 + (i * 100));
+                drawText(renderer, std::to_string(player.controllerId), 200, 200 + (i * 100));
+                if (player.controller != nullptr && SDL_GameControllerGetAttached(player.controller)) {
+                    renderSprite(player); // same function as before
+                    if (controller1 != nullptr && SDL_GameControllerGetAttached(controller1)) {
+                        drawText(renderer, std::to_string(SDL_GameControllerGetPlayerIndex(player.controller)), player.bounds.x, player.bounds.y + player.bounds.w);
+                    }
+                }
+                i++;
+            }
 
             for (auto& enemy : enemies) {
                 renderSprite(enemy); // same function as before
@@ -746,8 +855,18 @@ int main(int argc, char **argv) {
     SDL_JoystickOpen(0);                // Open the first joystick
 
     // Controller always connected on this console
-    controller = SDL_GameControllerOpen(0);
-    controller1 = SDL_GameControllerOpen(1);
+    auto* firstConnectedController = SDL_GameControllerOpen(0);
+    auto* secondConnectedController = SDL_GameControllerOpen(1);
+    if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
+        controller = firstConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
+        controller1 = firstConnectedController;
+    }
+    if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
+        controller = secondConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
+        controller1 = secondConnectedController;
+    }
 
     srand(time(NULL));
 

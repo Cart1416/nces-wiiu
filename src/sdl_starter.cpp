@@ -56,7 +56,7 @@ Sprite loadSprite(SDL_Renderer* renderer, const char* filePath, int positionX, i
         SDL_QueryTexture(texture, nullptr, nullptr, &bounds.w, &bounds.h);
     }
 
-    Sprite sprite = {texture, bounds, vx, vy, positionX, positionY, NAN, false, false, false, false, 0}; // vx, vy default to 0 if not passed
+    Sprite sprite = {texture, bounds, vx, vy, positionX, positionY, NAN, false, false, false, false, 0, nullptr, -1}; // vx, vy default to 0 if not passed
     return sprite;
 }
 

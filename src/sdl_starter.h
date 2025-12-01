@@ -41,6 +41,8 @@ struct Sprite {
     bool immobile = false;
     bool evil = false;
     int evilTimer = 0;
+    SDL_GameController* controller = nullptr;
+    int controllerId = -1;
 };
 
 int startSDLSystems(SDL_Window *window, SDL_Renderer *renderer);
