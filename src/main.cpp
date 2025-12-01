@@ -111,7 +111,9 @@ int PLAYER_SPEED = 250;           // Player movement speed in pixels/sec
 
 // Player sprite
 Sprite playerSprite;                    // Custom struct representing the player
+std::vector<Sprite> players;            // players
 SDL_Rect mouth;                    // Custom struct representing the player's mouth
+std::vector<SDL_Rect> mouths;        // mouths
 
 // Audio
 Mix_Music *music = nullptr;             // Background music
@@ -256,6 +258,21 @@ void addTokenCustom(SDL_Renderer* renderer, const char* filePath, int x, int y, 
 
     // Add it to the dynamic vector
     tokens.push_back(newToken);
+}
+
+void addPlayerCustom(SDL_Renderer* renderer, const char* filePath, int x, int y) {
+    Sprite newPlayer = loadSprite(renderer, filePath, x, y);
+
+    players.push_back(newPlayer);
+
+    // Setup mouth rectangle relative to player's position
+    SDL_Rect mouth;
+    mouth.x = x + 27;   // Adjust offset as done in your main loop
+    mouth.y = y + 88;
+    mouth.w = 40;
+    mouth.h = 20;
+
+    mouths.push_back(mouth);
 }
 
 // Function to add an enemy
@@ -588,6 +605,24 @@ void renderSprite(Sprite &sprite) {
     SDL_RenderCopy(renderer, sprite.texture, NULL, &sprite.bounds);
 }
 
+void drawText(SDL_Renderer* renderer, std::string text, int x, int y, SDL_Color color, std::string positioning = "") {
+    SDL_Texture *textTexture = nullptr;
+    updateTextureText(textTexture, text.c_str(), font, renderer, color);
+    SDL_Rect textBounds;
+
+    // Draw tokens eaten
+    SDL_QueryTexture(textTexture, NULL, NULL, &textBounds.w, &textBounds.h);
+    textBounds.y = y;
+    textBounds.x = x;
+    if (positioning == "center") {
+        textBounds.x = x - textBounds.w / 2;
+    } else if (positioning == "right") {
+        textBounds.x = x - textBounds.w;
+    }
+    SDL_RenderCopy(renderer, textTexture, NULL, &textBounds);
+    SDL_DestroyTexture(textTexture);
+}
+
 void render() {
     int backgroundColors = 255;
     if (currentScreen == "game" && contains(gameModeModifiers[currentGameMode], "blackEndScreen") && enemyEaten >= maxEnemyEaten[currentGameMode]) {
@@ -597,25 +632,11 @@ void render() {
     SDL_RenderClear(renderer);
 
     if (currentScreen == "menu") {
-        // Update tokens eaten text
-        std::string tokenseatenString = "Game: " + gameModeNames[currentGameMode];
-        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[8]);
+        // Update selected game text
+        drawText(renderer, "Game: " + gameModeNames[currentGameMode], SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50, colors[8], "center");
 
-        // Draw tokens eaten
-        SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
-        tokenseatenBounds.x = SCREEN_WIDTH / 2 - tokenseatenBounds.w / 2;
-        tokenseatenBounds.y = SCREEN_HEIGHT / 2 + 50;
-        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
-
-        // Update celery eaten text
-        std::string enemyEatenString = "A: Select    D-PAD: Navigate" + std::to_string(SDL_GameControllerGetPlayerIndex(controller1));
-        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[8]);
-
-        // Draw enemy eaten
-        SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
-        enemyEatenBounds.x = SCREEN_WIDTH / 2 - enemyEatenBounds.w / 2;
-        enemyEatenBounds.y = SCREEN_HEIGHT / 2 - 50;
-        SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
+        // Update navigation text
+        drawText(renderer, "A: Select    D-PAD: Navigate", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50, colors[8], "center");
     }
     if (currentScreen == "game") {
         // Draw player
@@ -647,41 +668,32 @@ void render() {
                 enemyEatenColor = 1;
             }
         }
-        updateTextureText(enemyEatenTexture, enemyEatenString.c_str(), font, renderer, colors[enemyEatenColor]);
-
-        // Draw enemy eaten
-        SDL_QueryTexture(enemyEatenTexture, NULL, NULL, &enemyEatenBounds.w, &enemyEatenBounds.h);
+        int enemyEatenX = 32;
+        std::string enemyEatenPosition = "";
         if (contains(gameModeModifiers[currentGameMode], "altUI")) {
             if (enemyEaten >= maxEnemyEaten[currentGameMode]) {
-                enemyEatenBounds.x = 0;
+                enemyEatenX = 0;
             } else {
-                enemyEatenBounds.x = SCREEN_WIDTH - enemyEatenBounds.w - 400;
+                enemyEatenX = SCREEN_WIDTH - 400;
+                enemyEatenPosition = "right";
             }
-            enemyEatenBounds.y = 0;
-        } else {
-            enemyEatenBounds.x = 32;
-            enemyEatenBounds.y = 0;
         }
-        SDL_RenderCopy(renderer, enemyEatenTexture, NULL, &enemyEatenBounds);
+        drawText(renderer, enemyEatenString, enemyEatenX, 0, colors[enemyEatenColor], enemyEatenPosition);
 
         // Update tokenseaten text
         int tokensEatenColor = 8;
         if (enemyEaten >= maxEnemyEaten[currentGameMode] && contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
             tokensEatenColor = 1;
         }
-        std::string tokenseatenString = tokenToCollectText[currentGameMode] + std::to_string(tokenseaten);
-        updateTextureText(tokenseatenTexture, tokenseatenString.c_str(), font, renderer, colors[tokensEatenColor]);
-
-        // Draw tokens eaten
+        int tokensEatenX = 32;
+        int tokensEatenY = 40;
         SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
         if (contains(gameModeModifiers[currentGameMode], "altUI")) {
-            tokenseatenBounds.x = SCREEN_WIDTH - tokenseatenBounds.w;
-            tokenseatenBounds.y = 0;
-        } else {
-            tokenseatenBounds.x = 32;
-            tokenseatenBounds.y = 40;
+            tokensEatenX = SCREEN_WIDTH - tokenseatenBounds.w;
+            tokensEatenY = 0;
         }
         SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
+        drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), enemyEatenX, tokensEatenY, colors[tokensEatenColor], enemyEatenPosition);
 
         // Update misc1 text
         std::string miscString1 = "";
@@ -690,13 +702,7 @@ void render() {
             miscString1 = "Enemy limit of 200 reached!";
         }
         if (miscString1 != "") {
-            updateTextureText(miscTexture1, miscString1.c_str(), font, renderer, colors[8]);
-
-            // Draw misc1
-            SDL_QueryTexture(miscTexture1, NULL, NULL, &miscBounds1.w, &miscBounds1.h);
-            miscBounds1.x = 32;
-            miscBounds1.y = 80;
-            SDL_RenderCopy(renderer, miscTexture1, NULL, &miscBounds1);
+            drawText(renderer, miscString1, 32, 80, colors[8]);
         }
     }
     // Present everything on screen
