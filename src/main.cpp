@@ -441,7 +441,7 @@ bool previousRight = false;
 void update(float deltaTime) {
     // Move player based on controller input
     if (currentScreen == "menu") {
-        if (SDL_GameControllerGetPlayerIndex(playerSprite.controller) >= 0 && playerSprite.controller != nullptr && SDL_GameControllerGetAttached(playerSprite.controller)) {
+        if (SDL_GameControllerGetPlayerIndex(controller) >= 0 && controller != nullptr && SDL_GameControllerGetAttached(controller)) {
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
                 currentScreen = "game";            
                 isGamePaused = false;
