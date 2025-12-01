@@ -105,6 +105,9 @@ SDL_Window *window = nullptr;           // The game window
 SDL_Renderer *renderer = nullptr;       // The rendering context for the window
 SDL_GameController *controller = nullptr; // The game controller (Wii U Gamepad)
 SDL_GameController *controller1 = nullptr; // The game controller (Wii U Pro Controller 1)
+SDL_GameController *controller2 = nullptr; // The game controller (Wii U Pro Controller 2)
+SDL_GameController *controller3 = nullptr; // The game controller (Wii U Pro Controller 3)
+SDL_GameController *controller4 = nullptr; // The game controller (Wii U Pro Controller 4)
 
 // Game constants
 int PLAYER_SPEED = 250;           // Player movement speed in pixels/sec
@@ -178,6 +181,73 @@ SDL_Color colors[] = {
 };
 
 // ------------------ EVENT HANDLING ------------------
+void refreshControllers() {
+    auto* firstConnectedController = SDL_GameControllerOpen(0);
+    auto* secondConnectedController = SDL_GameControllerOpen(1);
+    auto* thirdConnectedController = SDL_GameControllerOpen(2);
+    auto* fourthConnectedController = SDL_GameControllerOpen(3);
+    auto* fifthConnectedController = SDL_GameControllerOpen(4);
+    if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
+        controller = firstConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
+        controller1 = firstConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 2) {
+        controller2 = firstConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 3) {
+        controller3 = firstConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 4) {
+        controller4 = firstConnectedController;
+    }
+    
+    if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
+        controller = secondConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
+        controller1 = secondConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 2) {
+        controller2 = secondConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 3) {
+        controller3 = secondConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 4) {
+        controller4 = secondConnectedController;
+    }
+
+    if (SDL_GameControllerGetPlayerIndex(thirdConnectedController) == 0) {
+        controller = thirdConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(thirdConnectedController) == 1) {
+        controller1 = thirdConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(thirdConnectedController) == 2) {
+        controller2 = thirdConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(thirdConnectedController) == 3) {
+        controller3 = thirdConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(thirdConnectedController) == 4) {
+        controller4 = thirdConnectedController;
+    }
+
+    if (SDL_GameControllerGetPlayerIndex(fourthConnectedController) == 0) {
+        controller = fourthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fourthConnectedController) == 1) {
+        controller1 = fourthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fourthConnectedController) == 2) {
+        controller2 = fourthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fourthConnectedController) == 3) {
+        controller3 = fourthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fourthConnectedController) == 4) {
+        controller4 = fourthConnectedController;
+    }
+
+    if (SDL_GameControllerGetPlayerIndex(fifthConnectedController) == 0) {
+        controller = fifthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fifthConnectedController) == 1) {
+        controller1 = fifthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fifthConnectedController) == 2) {
+        controller2 = fifthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fifthConnectedController) == 3) {
+        controller3 = fifthConnectedController;
+    } else if (SDL_GameControllerGetPlayerIndex(fifthConnectedController) == 4) {
+        controller4 = fifthConnectedController;
+    }
+}
+
 void handleEvents() {
     SDL_Event event;
 
@@ -206,25 +276,7 @@ void handleEvents() {
             //controller = SDL_GameControllerOpen(0);
             //SDL_GameControllerClose(controller1);
             //controller1 = SDL_GameControllerOpen(1);
-            auto* firstConnectedController = SDL_GameControllerOpen(0);
-            auto* secondConnectedController = SDL_GameControllerOpen(1);
-            if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
-                controller = firstConnectedController;
-            } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
-                controller1 = firstConnectedController;
-            }
-            if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
-                controller = secondConnectedController;
-            } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
-                controller1 = secondConnectedController;
-            }
-            for (auto& player : players) {
-                if (player.controllerId == 0) {
-                    player.controller = controller;
-                } else if (player.controllerId == 1) {
-                    player.controller = controller1;
-                }
-            }
+            refreshControllers();
         }
 
         if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
@@ -234,25 +286,7 @@ void handleEvents() {
             //controller = SDL_GameControllerOpen(0);
             //SDL_GameControllerClose(controller1);
             //controller1 = SDL_GameControllerOpen(1);
-            auto* firstConnectedController = SDL_GameControllerOpen(0);
-            auto* secondConnectedController = SDL_GameControllerOpen(1);
-            if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
-                controller = firstConnectedController;
-            } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
-                controller1 = firstConnectedController;
-            }
-            if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
-                controller = secondConnectedController;
-            } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
-                controller1 = secondConnectedController;
-            }
-            for (auto& player : players) {
-                if (player.controllerId == 0) {
-                    player.controller = controller;
-                } else if (player.controllerId == 1) {
-                    player.controller = controller1;
-                }
-            }
+            refreshControllers();
         }
     }
 }
@@ -422,6 +456,9 @@ void restartGame() {
     PLAYER_SPEED = playerSpeed[currentGameMode];
     addPlayer(controller, 0);
     addPlayer(controller1, 1);
+    addPlayer(controller2, 2);
+    addPlayer(controller3, 3);
+    addPlayer(controller4, 4);
     for (auto& player : players) {
         if (player.controllerId == 0) {
             player.controller = controller;
@@ -867,18 +904,7 @@ int main(int argc, char **argv) {
     SDL_JoystickOpen(0);                // Open the first joystick
 
     // Controller always connected on this console
-    auto* firstConnectedController = SDL_GameControllerOpen(0);
-    auto* secondConnectedController = SDL_GameControllerOpen(1);
-    if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 0) {
-        controller = firstConnectedController;
-    } else if (SDL_GameControllerGetPlayerIndex(firstConnectedController) == 1) {
-        controller1 = firstConnectedController;
-    }
-    if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 0) {
-        controller = secondConnectedController;
-    } else if (SDL_GameControllerGetPlayerIndex(secondConnectedController) == 1) {
-        controller1 = secondConnectedController;
-    }
+    refreshControllers();
 
     srand(time(NULL));
 
