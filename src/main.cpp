@@ -424,6 +424,11 @@ void update(float deltaTime) {
                 if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
                     addEnemy();
                 }
+            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) / 32768.0f) < -0.1f) {
+                playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
+                    playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+                }
             }
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
                 playerSprite.bounds.y += PLAYER_SPEED * deltaTime;
@@ -432,6 +437,11 @@ void update(float deltaTime) {
                 }
                 if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
                     addEnemy();
+                }
+            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) / 32768.0f) > 0.1f) {
+                playerSprite.bounds.y += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY)) / 32768 * PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h + 80) { // Wrap bottom -> top
+                    playerSprite.bounds.y = 0;
                 }
             }
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
@@ -442,6 +452,11 @@ void update(float deltaTime) {
                 if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
                     addEnemy();
                 }
+            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) / 32768.0f) < -0.1f) {
+                playerSprite.bounds.x += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX)) / 32768 * PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.x < -80) {
+                    playerSprite.bounds.x = SCREEN_WIDTH;
+                }
             }
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
                 playerSprite.bounds.x += PLAYER_SPEED * deltaTime;
@@ -450,6 +465,11 @@ void update(float deltaTime) {
                 }
                 if (contains(gameModeModifiers[currentGameMode], "spawnEnemyOnMove")) {
                     addEnemy();
+                }
+            } else if (static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) / 32768.0f) > 0.1f) {
+                playerSprite.bounds.x += static_cast<float>(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX)) / 32768 * PLAYER_SPEED * deltaTime;
+                if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w + 80) {
+                    playerSprite.bounds.x = 0;
                 }
             }
         }
@@ -692,8 +712,7 @@ void render() {
             tokensEatenX = SCREEN_WIDTH - tokenseatenBounds.w;
             tokensEatenY = 0;
         }
-        SDL_RenderCopy(renderer, tokenseatenTexture, NULL, &tokenseatenBounds);
-        drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), enemyEatenX, tokensEatenY, colors[tokensEatenColor], enemyEatenPosition);
+        drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), tokensEatenX, tokensEatenY, colors[tokensEatenColor], enemyEatenPosition);
 
         // Update misc1 text
         std::string miscString1 = "";
