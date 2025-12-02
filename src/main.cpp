@@ -8,6 +8,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <whb/file.h>
+#include <sys/stat.h>
 
 const std::string gameModeNames[] = {
     "Nic Cage Eats Stuff",
@@ -92,6 +94,8 @@ const int playerSpeed[] = {
     250,
     250
 };
+
+//auto highscoreFolder = "sd:/wiiu/apps/NicCageEatsStuff/highscores"
 
 
 
@@ -184,6 +188,11 @@ SDL_Color colors[] = {
     {255, 0, 255, 0},   // purple
     {0, 0, 0, 0}, // black
 };
+
+bool folderExists(const std::string &path) {
+    struct stat info;
+    return (stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR));
+}
 
 // ------------------ EVENT HANDLING ------------------
 void refreshControllers() {
@@ -937,6 +946,7 @@ int main(int argc, char **argv) {
     WHBProcInit();       // Initialize Wii U process system
     romfsInit();         // Initialize ROM filesystem
     chdir("romfs:/");    // Change working directory to ROM filesystem
+    WHBMountSdCard();
 
     // Create SDL window and renderer
     window = SDL_CreateWindow("Nic Cage Eats Stuff", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -1008,6 +1018,7 @@ int main(int argc, char **argv) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     stopSDLSystems();
+    WHBUnmountSdCard();
     romfsExit();
     WHBProcShutdown();
 
