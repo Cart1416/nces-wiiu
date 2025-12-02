@@ -142,7 +142,12 @@ int tokenseaten = 0;                          // Player tokenseaten
 // Enemy eaten display
 SDL_Texture *enemyEatenTexture = nullptr;    // Texture for the tokenseaten
 SDL_Rect enemyEatenBounds;                   // Position and size of tokenseaten
-int enemyEaten = 0;                          // Enemy tokenseaten
+int enemyEaten = 0;                          // Enemy tokenseaten player 0
+//I might give each player their own enemy eaten but not now
+int enemyEaten1 = 0;                          // Enemy tokenseaten player 1
+int enemyEaten2 = 0;                          // Enemy tokenseaten player 2
+int enemyEaten3 = 0;                          // Enemy tokenseaten player 3
+int enemyEaten4 = 0;                          // Enemy tokenseaten player 4
 
 // misc display1
 SDL_Texture *miscTexture1 = nullptr;    // Texture for the tokenseaten
@@ -661,7 +666,17 @@ void update(float deltaTime) {
                 // enemy collision with player
                 for (auto& enemy : enemies) {
                     if (SDL_HasIntersection(&mouths[playerI], &enemy.bounds) && !playerSprite.invulnerable) {
-                        enemyEaten++;                        // Increment enemy eaten
+                        //if (playerSprite.controllerId == 0) { I might give each player their own enemy eaten but not now
+                            enemyEaten++;
+                        //} else if (playerSprite.controllerId == 1) {
+                            //enemyEaten1++;
+                        //} else if (playerSprite.controllerId == 2) {
+                            //enemyEaten2++;
+                        //} else if (playerSprite.controllerId == 3) {
+                            //enemyEaten3++;
+                        //} else  if (playerSprite.controllerId == 4) {
+                            //enemyEaten4++;
+                        //}
                         enemy.fx = rng(0, SCREEN_WIDTH);
                         enemy.fy = rng(0, SCREEN_HEIGHT);
                     }
