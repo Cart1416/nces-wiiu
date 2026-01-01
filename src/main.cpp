@@ -384,13 +384,13 @@ void addPlayerCustom(SDL_Renderer* renderer, const char* filePath, int x, int y,
 void addEnemy() {
     int enemyLen = static_cast<int>(enemies.size());
     if (!(contains(gameModeModifiers[currentGameMode], "noEnemy")) && enemyLen < 200) {
-        addEnemyCustom(renderer, enemyImage[currentGameMode], rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), rngFloat(enemySpeedMin, enemySpeedMax), rngFloat(enemySpeedMin, enemySpeedMax));
+        addEnemyCustom(renderer, enemyImage[currentGameMode], rng(0, SCREEN_WIDTH - 30), rng(0, SCREEN_HEIGHT - 30), rngFloat(enemySpeedMin, enemySpeedMax), rngFloat(enemySpeedMin, enemySpeedMax));
     }
 }
 
 // Function to add a token
 void addToken() {
-    addTokenCustom(renderer, tokenImage[currentGameMode], rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT), 0.0f, 0.0f);
+    addTokenCustom(renderer, tokenImage[currentGameMode], rng(0, SCREEN_WIDTH - 30), rng(0, SCREEN_HEIGHT - 30), 0.0f, 0.0f);
 }
 
 void addPlayer(SDL_GameController* controller = controller, int controllerId = 0) {
@@ -686,8 +686,8 @@ void update(float deltaTime) {
                         //} else  if (playerSprite.controllerId == 4) {
                             //enemyEaten4++;
                         //}
-                        enemy.fx = rng(0, SCREEN_WIDTH);
-                        enemy.fy = rng(0, SCREEN_HEIGHT);
+                        enemy.fx = rng(0, SCREEN_WIDTH - 30);
+                        enemy.fy = rng(0, SCREEN_HEIGHT - 30);
                     }
                 }
 
@@ -696,8 +696,8 @@ void update(float deltaTime) {
                     if (SDL_HasIntersection(&mouths[playerI], &token.bounds)) {
                         Mix_PlayChannel(-1, sound, 0); // Play collision sound
                         tokenseaten++;                        // Increment tokenseaten
-                        token.fx = rng(0, SCREEN_WIDTH - 10);
-                        token.fy = rng(0, SCREEN_HEIGHT - 10);
+                        token.fx = rng(0, SCREEN_WIDTH - 30);
+                        token.fy = rng(0, SCREEN_HEIGHT - 30);
                         if (tokenseaten % 3 == 0) {
                             addEnemy();
                         }
