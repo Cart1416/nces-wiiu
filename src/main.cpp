@@ -946,7 +946,6 @@ int main(int argc, char **argv) {
     WHBProcInit();       // Initialize Wii U process system
     romfsInit();         // Initialize ROM filesystem
     chdir("romfs:/");    // Change working directory to ROM filesystem
-    WHBMountSdCard();
 
     // Create SDL window and renderer
     window = SDL_CreateWindow("Nic Cage Eats Stuff", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -1018,7 +1017,6 @@ int main(int argc, char **argv) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     stopSDLSystems();
-    WHBUnmountSdCard();
     romfsExit();
     WHBProcShutdown();
 
