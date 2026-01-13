@@ -15,10 +15,12 @@ const std::string gameModeNames[] = {
     "Nic Cage Eats Stuff",
     "EASY Nic Cage Eats Stuff",
     "IMPOSSIBLE Nic Cage Eats Stuff",
-    "Nic Cage Eats Stuff 2"
+    "Nic Cage Eats Stuff 2",
+    "Nic Crash (warning: this will crash your Wii U)"
 };
 
 const std::string tokenToCollectText[] = {
+    "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: ",
@@ -29,6 +31,7 @@ const std::string enemyToCollectText[] = {
     "Celery eaten: ",
     "Celery eaten: ",
     "Celery eaten: ",
+    "Celery eaten: ",
     "Celery eaten: "
 };
 
@@ -36,7 +39,8 @@ const int maxEnemyEaten[] = {
     3,
     999,
     10,
-    3
+    3,
+    1
 };
 
 const std::string gameOverText[] = {
@@ -44,9 +48,11 @@ const std::string gameOverText[] = {
     "How did you die? Press A to restart or - to change game.",
     "You are trash lol. Press A to restart or - to change game.",
     "GAME OVER. Press A to restart or - to change game."
+    "Your Wii U should have crashed by now. Press A to restart or - to change game."
 };
 
 const char* playerImage[] = {
+    "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
@@ -57,10 +63,12 @@ const char* playerTransparentImage[] = {
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png",
+    "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png"
 };
 
 const char* tokenImage[] = {
+    "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png",
@@ -71,12 +79,14 @@ const char* enemyImage[] = {
     "sprites/celery.png",
     "sprites/celery.png",
     "sprites/celery.png",
+    "sprites/celery.png",
     "sprites/celery.png"
 };
 
 const int tokenCount[] = {
     1,
     5,
+    1,
     1,
     1
 };
@@ -85,12 +95,14 @@ const std::vector<std::vector<std::string>> gameModeModifiers = {
     {},
     {"noEnemy"},
     {"spawnEnemyOnMove"},
-    {"angryCelery", "blackEndScreen", "altUI", "enemiesBounce", "randomSizeEnemies", "noCircle"}
+    {"angryCelery", "blackEndScreen", "altUI", "enemiesBounce", "randomSizeEnemies", "noCircle"},
+    {"crashOnLose"}
 };
 
 const int playerSpeed[] = {
     250,
     500,
+    250,
     250,
     250
 };
@@ -197,6 +209,8 @@ bool folderExists(const std::string &path) {
     return (stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR));
 }
 
+int numberOfPlayers = 1;
+
 // ------------------ EVENT HANDLING ------------------
 void refreshControllers() {
     SDL_GameControllerClose(controller);
@@ -280,6 +294,13 @@ void refreshControllers() {
             player.controller = controller3;
         } else if (player.controllerId == 4) {
             player.controller = controller4;
+        }
+    }
+
+    numberOfPlayers = 0;
+    for (auto& player : players) {
+        if (player.controller != nullptr && SDL_GameControllerGetPlayerIndex(player.controller) >= 0) {
+            numberOfPlayers++;
         }
     }
 }
@@ -577,7 +598,7 @@ void update(float deltaTime) {
                 playerSprite.controllerId = SDL_GameControllerGetPlayerIndex(playerSprite.controller);
             }
             auto currentController = playerSprite.controller;
-            if (!playerSprite.immobile && enemyEaten < maxEnemyEaten[currentGameMode]) {
+            if (!playerSprite.immobile && enemyEaten < maxEnemyEaten[currentGameMode] * numberOfPlayers) {
                 if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
                     playerSprite.bounds.y -= PLAYER_SPEED * deltaTime;
                     if (playerSprite.bounds.y < -80) { // Wrap around top -> bottom
@@ -668,7 +689,7 @@ void update(float deltaTime) {
             }
             playerI2++;
         }
-        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= maxEnemyEaten[currentGameMode]) {
+        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= maxEnemyEaten[currentGameMode] * numberOfPlayers) {
             restartGame();
         }
         
@@ -691,6 +712,13 @@ void update(float deltaTime) {
                         //}
                         enemy.fx = rng(0, SCREEN_WIDTH - 30);
                         enemy.fy = rng(0, SCREEN_HEIGHT - 30);
+                        if (enemyEaten >= maxEnemyEaten[currentGameMode] * numberOfPlayers) {
+                            if (contains(gameModeModifiers[currentGameMode], "crashOnLose")) {
+                                // Crash the Wii U
+                                int* crash = nullptr;
+                                *crash = 0; // Dereference null pointer to cause a crash
+                            }
+                        }
                     }
                 }
 
@@ -842,7 +870,7 @@ void drawText(SDL_Renderer* renderer, std::string text, int x, int y, SDL_Color 
 
 void render() {
     int backgroundColors = 255;
-    if (currentScreen == "game" && contains(gameModeModifiers[currentGameMode], "blackEndScreen") && enemyEaten >= maxEnemyEaten[currentGameMode]) {
+    if (currentScreen == "game" && contains(gameModeModifiers[currentGameMode], "blackEndScreen") && enemyEaten >= maxEnemyEaten[currentGameMode] * numberOfPlayers) {
         backgroundColors = 0;
     }
     SDL_SetRenderDrawColor(renderer, backgroundColors, backgroundColors, backgroundColors, 255); // white background
@@ -869,7 +897,7 @@ void render() {
     }
     if (currentScreen == "game") {
         // Draw player
-        if (enemyEaten < maxEnemyEaten[currentGameMode]) {
+        if (enemyEaten < maxEnemyEaten[currentGameMode] * numberOfPlayers || contains(gameModeModifiers[currentGameMode], "crashOnLose")) {
             //renderSprite(playerSprite);
             int i = 0;
             for (auto& player : players) {
@@ -902,8 +930,8 @@ void render() {
         // Update celery eaten text
         std::string enemyEatenString = "";
         int enemyEatenColor = 3;
-        if (enemyEaten < maxEnemyEaten[currentGameMode]) {
-            enemyEatenString = enemyToCollectText[currentGameMode] + std::to_string(enemyEaten) + "/" + std::to_string(maxEnemyEaten[currentGameMode]);
+        if (enemyEaten < maxEnemyEaten[currentGameMode] * numberOfPlayers) {
+            enemyEatenString = enemyToCollectText[currentGameMode] + std::to_string(enemyEaten) + "/" + std::to_string(maxEnemyEaten[currentGameMode] * numberOfPlayers);
         } else {
             enemyEatenString = gameOverText[currentGameMode];
             if (contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
@@ -913,7 +941,7 @@ void render() {
         int enemyEatenX = 32;
         std::string enemyEatenPosition = "";
         if (contains(gameModeModifiers[currentGameMode], "altUI")) {
-            if (enemyEaten >= maxEnemyEaten[currentGameMode]) {
+            if (enemyEaten >= maxEnemyEaten[currentGameMode] * numberOfPlayers) {
                 enemyEatenX = 0;
             } else {
                 enemyEatenX = SCREEN_WIDTH - 400;
@@ -927,7 +955,7 @@ void render() {
         if (contains(gameModeModifiers[currentGameMode], "altUI")) {
             tokensEatenColor = 11;
         }
-        if (enemyEaten >= maxEnemyEaten[currentGameMode] && contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
+        if (enemyEaten >= maxEnemyEaten[currentGameMode] * numberOfPlayers && contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
             tokensEatenColor = 1;
         }
         int tokensEatenX = 32;
