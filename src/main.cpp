@@ -187,6 +187,9 @@ SDL_Color colors[] = {
     {0, 255, 255, 0},   // cyan
     {255, 0, 255, 0},   // purple
     {0, 0, 0, 0}, // black
+    {255, 165, 0, 0},  // orange
+    {255, 192, 203, 0}, // pink
+    {255, 125, 0, 0}  // yellow
 };
 
 bool folderExists(const std::string &path) {
@@ -746,12 +749,18 @@ void update(float deltaTime) {
 
             if (contains(gameModeModifiers[currentGameMode], "enemiesBounce")) {
                 int ii = 0;
+                int enemiesTouched = 0;
                 for (auto& enemy2 : enemies) {
                     if (SDL_HasIntersection(&enemy.bounds, &enemy2.bounds) && i != ii) {
                         enemy.hv = -enemy.hv;
                         enemy.vv = -enemy.vv;
+                        if (enemiesTouched > 1) {
+                            enemy.fx = rng(0, SCREEN_WIDTH - 30);
+                            enemy.fy = rng(0, SCREEN_HEIGHT - 30);
+                        }
                         enemy.fx += enemy.hv * deltaTime * 3;
                         enemy.fy += enemy.vv * deltaTime * 3;
+                        enemiesTouched++;
                     }
                     ii++;
                 }
@@ -915,6 +924,9 @@ void render() {
 
         // Update tokenseaten text
         int tokensEatenColor = 8;
+        if (contains(gameModeModifiers[currentGameMode], "altUI")) {
+            tokensEatenColor = 11;
+        }
         if (enemyEaten >= maxEnemyEaten[currentGameMode] && contains(gameModeModifiers[currentGameMode], "blackEndScreen")) {
             tokensEatenColor = 1;
         }
@@ -922,7 +934,7 @@ void render() {
         int tokensEatenY = 40;
         SDL_QueryTexture(tokenseatenTexture, NULL, NULL, &tokenseatenBounds.w, &tokenseatenBounds.h);
         if (contains(gameModeModifiers[currentGameMode], "altUI")) {
-            tokensEatenX = SCREEN_WIDTH - tokenseatenBounds.w;
+            tokensEatenX = SCREEN_WIDTH;
             tokensEatenY = 0;
         }
         drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), tokensEatenX, tokensEatenY, colors[tokensEatenColor], enemyEatenPosition);
