@@ -47,7 +47,7 @@ const std::string gameOverText[] = {
     "You died! Press A to restart or - to change game.",
     "How did you die? Press A to restart or - to change game.",
     "You are trash lol. Press A to restart or - to change game.",
-    "GAME OVER. Press A to restart or - to change game."
+    "GAME OVER. Press A to restart or - to change game.",
     "Your Wii U should have crashed by now. Press A to restart or - to change game."
 };
 
