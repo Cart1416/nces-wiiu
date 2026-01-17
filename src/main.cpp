@@ -536,10 +536,18 @@ void restartGame() {
 bool previousInvulnerable = false;
 bool previousLeft = false;
 bool previousRight = false;
+bool previousA = false;
+bool currentA = false;
 
 // ------------------ GAME LOGIC ------------------
 void update(float deltaTime) {
     // Move player based on controller input
+    previousA = currentA;
+    if (SDL_GameControllerGetAttached(controller)) {
+        currentA = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A);
+    } else {
+        currentA = SDL_GameControllerGetButton(controller1, SDL_CONTROLLER_BUTTON_A);
+    }
     if (currentScreen == "menu") {
         if (SDL_GameControllerGetPlayerIndex(controller) >= 0 && controller != nullptr && SDL_GameControllerGetAttached(controller)) {
             if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
@@ -690,7 +698,10 @@ void update(float deltaTime) {
             playerI2++;
         }
         if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A) && enemyEaten >= maxEnemyEaten[currentGameMode] * numberOfPlayers) {
-            restartGame();
+            if (!previousA) {
+                // Restart the game
+                restartGame();
+            }
         }
         
         int playerI = 0;
