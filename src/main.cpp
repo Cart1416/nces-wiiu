@@ -10,13 +10,18 @@
 #include <algorithm>
 #include <whb/file.h>
 #include <sys/stat.h>
+#include <sstream>
+#include <whb/log_cafe.h>
+#include <whb/log_udp.h>
+#include <whb/log.h>
 
 const std::string gameModeNames[] = {
     "Nic Cage Eats Stuff",
     "EASY Nic Cage Eats Stuff",
     "IMPOSSIBLE Nic Cage Eats Stuff",
     "Nic Cage Eats Stuff 2",
-    "Nic Crash (warning: this will crash your Wii U)"
+    "Nic Crash (warning: this will crash your Wii U)",
+    "Don't touch red"
 };
 
 const std::string tokenToCollectText[] = {
@@ -24,7 +29,8 @@ const std::string tokenToCollectText[] = {
     "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: ",
-    "Chicken eaten: "
+    "Chicken eaten: ",
+    "Seconds alive: "
 };
 
 const std::string enemyToCollectText[] = {
@@ -32,7 +38,8 @@ const std::string enemyToCollectText[] = {
     "Celery eaten: ",
     "Celery eaten: ",
     "Celery eaten: ",
-    "Celery eaten: "
+    "Celery eaten: ",
+    "Reds touched: "
 };
 
 const int maxEnemyEaten[] = {
@@ -40,7 +47,8 @@ const int maxEnemyEaten[] = {
     999,
     10,
     3,
-    1
+    1,
+    3
 };
 
 const std::string gameOverText[] = {
@@ -48,10 +56,12 @@ const std::string gameOverText[] = {
     "How did you die? Press A to restart or - to change game.",
     "You are trash lol. Press A to restart or - to change game.",
     "GAME OVER. Press A to restart or - to change game.",
-    "Your Wii U should have crashed by now. Press A to restart or - to change game."
+    "Your Wii U should have crashed by now. Press A to restart or - to change game.",
+    "You died! Press A to restart or - to change game."
 };
 
 const char* playerImage[] = {
+    "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
     "sprites/NicCageFace.png",
@@ -64,10 +74,12 @@ const char* playerTransparentImage[] = {
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png",
+    "sprites/NicCageFaceTransparent.png",
     "sprites/NicCageFaceTransparent.png"
 };
 
 const char* tokenImage[] = {
+    "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png",
     "sprites/chicken.png",
@@ -80,7 +92,8 @@ const char* enemyImage[] = {
     "sprites/celery.png",
     "sprites/celery.png",
     "sprites/celery.png",
-    "sprites/celery.png"
+    "sprites/celery.png",
+    "sprites/red.png"
 };
 
 const int tokenCount[] = {
@@ -88,7 +101,8 @@ const int tokenCount[] = {
     5,
     1,
     1,
-    1
+    1,
+    0
 };
 
 const std::vector<std::vector<std::string>> gameModeModifiers = {
@@ -96,12 +110,14 @@ const std::vector<std::vector<std::string>> gameModeModifiers = {
     {"noEnemy"},
     {"spawnEnemyOnMove"},
     {"angryCelery", "blackEndScreen", "altUI", "enemiesBounce", "randomSizeEnemies", "noCircle"},
-    {"crashOnLose"}
+    {"crashOnLose"},
+    {"scoreEverySecond", "spawnEnemyEvery3Seconds"}
 };
 
 const int playerSpeed[] = {
     250,
     500,
+    250,
     250,
     250,
     250
@@ -210,6 +226,8 @@ bool folderExists(const std::string &path) {
 }
 
 int numberOfPlayers = 1;
+float scoreAccumulator = 0.0f;
+float enemyAccumulator = 0.0f;
 
 // ------------------ EVENT HANDLING ------------------
 void refreshControllers() {
@@ -531,6 +549,8 @@ void restartGame() {
     }
     enemyEaten = 0;
     tokenseaten = 0;
+    scoreAccumulator = 0.0f;
+    enemyAccumulator = 0.0f;
 }
 
 bool previousInvulnerable = false;
@@ -853,6 +873,28 @@ void update(float deltaTime) {
             token.bounds.x = token.fx;
             token.bounds.y = token.fy;
         }
+
+        // scoreEverySecond modifier: increment tokenseaten every real second
+        if (contains(gameModeModifiers[currentGameMode], "scoreEverySecond") && enemyEaten < maxEnemyEaten[currentGameMode] * numberOfPlayers) {
+            scoreAccumulator += deltaTime;
+            //int wholeSeconds = static_cast<int>(scoreAccumulator);
+            if (scoreAccumulator >= 1.0f) {
+                tokenseaten++;
+                scoreAccumulator -= scoreAccumulator;
+                WHBLogPrint((tokenToCollectText[currentGameMode] + std::to_string(tokenseaten) + "\n").c_str());
+                WHBLogPrint("a\n");
+            }
+        }
+
+        // scoreEverySecond modifier: increment tokenseaten every real second
+        if (contains(gameModeModifiers[currentGameMode], "spawnEnemyEvery3Seconds") && enemyEaten < maxEnemyEaten[currentGameMode] * numberOfPlayers) {
+            enemyAccumulator += deltaTime;
+            int spawnCount = static_cast<int>(enemyAccumulator / 3.0f);
+            if (spawnCount > 0) {
+                for (int i = 0; i < spawnCount; ++i) addEnemy();
+                enemyAccumulator -= spawnCount * 3.0f;
+            }
+        }
     }
 }
 
@@ -978,6 +1020,8 @@ void render() {
         }
         drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), tokensEatenX, tokensEatenY, colors[tokensEatenColor], enemyEatenPosition);
 
+        drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), 32, 220, colors[8]);
+
         // Update misc1 text
         std::string miscString1 = "";
         int enemyLen = static_cast<int>(enemies.size());
@@ -987,6 +1031,8 @@ void render() {
         if (miscString1 != "") {
             drawText(renderer, miscString1, 32, 80, colors[8]);
         }
+
+        drawText(renderer, std::to_string(scoreAccumulator), 32, 180, colors[8]);
     }
     // Present everything on screen
     SDL_RenderPresent(renderer);
@@ -997,6 +1043,8 @@ int main(int argc, char **argv) {
     WHBProcInit();       // Initialize Wii U process system
     romfsInit();         // Initialize ROM filesystem
     chdir("romfs:/");    // Change working directory to ROM filesystem
+    WHBLogCafeInit();
+    WHBLogUdpInit();
 
     // Create SDL window and renderer
     window = SDL_CreateWindow("Nic Cage Eats Stuff", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
