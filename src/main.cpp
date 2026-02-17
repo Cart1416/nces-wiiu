@@ -30,7 +30,7 @@ const std::string tokenToCollectText[] = {
     "Chicken eaten: ",
     "Chicken eaten: ",
     "Chicken eaten: ",
-    "Seconds alive: "
+    "Seconds: "
 };
 
 const std::string enemyToCollectText[] = {
@@ -93,7 +93,7 @@ const char* enemyImage[] = {
     "sprites/celery.png",
     "sprites/celery.png",
     "sprites/celery.png",
-    "sprites/red.png"
+    "sprites/red2.png"
 };
 
 const int tokenCount[] = {
@@ -111,7 +111,7 @@ const std::vector<std::vector<std::string>> gameModeModifiers = {
     {"spawnEnemyOnMove"},
     {"angryCelery", "blackEndScreen", "altUI", "enemiesBounce", "randomSizeEnemies", "noCircle"},
     {"crashOnLose"},
-    {"scoreEverySecond", "spawnEnemyEvery3Seconds"}
+    {"scoreEverySecond", "spawnEnemyEvery3Seconds", "noCircle", "noPlayerWrapAround"}
 };
 
 const int playerSpeed[] = {
@@ -695,6 +695,20 @@ void update(float deltaTime) {
                         addEnemy();
                     }
                 }
+                if (contains(gameModeModifiers[currentGameMode], "noPlayerWrapAround")) {
+                    if (playerSprite.bounds.y < 0) {
+                        playerSprite.bounds.y = 0;
+                    }
+                    if (playerSprite.bounds.y > SCREEN_HEIGHT - playerSprite.bounds.h) {
+                        playerSprite.bounds.y = SCREEN_HEIGHT - playerSprite.bounds.h;
+                    }
+                    if (playerSprite.bounds.x < 0) {
+                        playerSprite.bounds.x = 0;
+                    }
+                    if (playerSprite.bounds.x > SCREEN_WIDTH - playerSprite.bounds.w) {
+                        playerSprite.bounds.x = SCREEN_WIDTH - playerSprite.bounds.w;
+                    }
+                }
             }
             mouths[playerI2].x = playerSprite.bounds.x + 27;
             mouths[playerI2].y = playerSprite.bounds.y + 88;
@@ -904,7 +918,7 @@ void renderSprite(Sprite &sprite) {
     SDL_RenderCopy(renderer, sprite.texture, NULL, &sprite.bounds);
 }
 
-void drawText(SDL_Renderer* renderer, std::string text, int x, int y, SDL_Color color = colors[8], std::string positioning = "") {
+void drawText(SDL_Renderer* renderer, const std::string& text, int x, int y, SDL_Color color = colors[8], std::string positioning = "") {
     SDL_Texture *textTexture = nullptr;
     updateTextureText(textTexture, text.c_str(), font, renderer, color);
     SDL_Rect textBounds;
@@ -1020,19 +1034,18 @@ void render() {
         }
         drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), tokensEatenX, tokensEatenY, colors[tokensEatenColor], enemyEatenPosition);
 
-        drawText(renderer, tokenToCollectText[currentGameMode] + std::to_string(tokenseaten), 32, 220, colors[8]);
-
         // Update misc1 text
         std::string miscString1 = "";
         int enemyLen = static_cast<int>(enemies.size());
+        if (contains(gameModeModifiers[currentGameMode], "spawnEnemyEvery3Seconds")) {
+            miscString1 = "Reds spawned: " + std::to_string(enemyLen);
+        }
         if (enemyLen >= 200) {
             miscString1 = "Enemy limit of 200 reached!";
         }
         if (miscString1 != "") {
             drawText(renderer, miscString1, 32, 80, colors[8]);
         }
-
-        drawText(renderer, std::to_string(scoreAccumulator), 32, 180, colors[8]);
     }
     // Present everything on screen
     SDL_RenderPresent(renderer);
@@ -1061,11 +1074,6 @@ int main(int argc, char **argv) {
     refreshControllers();
 
     srand(time(NULL));
-
-    // Load player sprite
-    playerSprite = loadSprite(renderer, "sprites/NicCageFace.png", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-
-    enemySprite = loadSprite(renderer, "sprites/celery.png", rng(0, SCREEN_WIDTH), rng(0, SCREEN_HEIGHT));
     //addEnemy();
     //addToken();
     restartGame();
