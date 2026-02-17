@@ -111,7 +111,7 @@ const std::vector<std::vector<std::string>> gameModeModifiers = {
     {"spawnEnemyOnMove"},
     {"angryCelery", "blackEndScreen", "altUI", "enemiesBounce", "randomSizeEnemies", "noCircle"},
     {"crashOnLose"},
-    {"scoreEverySecond", "spawnEnemyEvery3Seconds", "noCircle", "noPlayerWrapAround"}
+    {"scoreEverySecond", "spawnEnemyEvery3Seconds", "noCircle", "noPlayerWrapAround", "noInvincible"}
 };
 
 const int playerSpeed[] = {
@@ -714,7 +714,8 @@ void update(float deltaTime) {
             mouths[playerI2].y = playerSprite.bounds.y + 88;
             mouths[playerI2].w = 40;
             mouths[playerI2].h = 20;
-            if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_A)) {
+            
+            if (SDL_GameControllerGetButton(currentController, SDL_CONTROLLER_BUTTON_A) && !(contains(gameModeModifiers[currentGameMode], "noInvincible"))) {
                 if (playerSprite.previousInvulnerable == false) {
                     playerSprite.texture = IMG_LoadTexture(renderer, playerTransparentImage[currentGameMode]);
                 }
