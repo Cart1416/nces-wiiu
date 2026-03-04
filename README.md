@@ -28,4 +28,4 @@ I built everything using Debian 13 after some trial and error
 
 * Clone this repo
 * `cd nces-wiiu`
-* `make`
+* `./make.sh`
