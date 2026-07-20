@@ -1,4 +1,6 @@
-# Nic Cage Eats Stuff Wii U Port
+# Nic Cage Eats Stuff Wii U Port 
+
+[HB App Store link](https://hb-app.store/wiiu/NicCageEatsStuff) (download directly to your Wii U!)
 
 My first C++ program
 A port of my Nic Cage Eats Stuff game to the Wii U. The game is simple, collect chicken and dodge the celery, try to get the highest score. Tip: hold a for invincibility
